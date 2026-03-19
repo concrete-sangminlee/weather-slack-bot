@@ -204,7 +204,7 @@ def aqi_level(aqi):
     if aqi <= 200:
         return "나쁨 :red_circle:"
     if aqi <= 300:
-        return "매우 나쁨 :purple_circle:"
+        return "매우 나쁨 :heavy_exclamation_mark:"
     return "위험 :skull:"
 
 
@@ -435,7 +435,7 @@ def calc_daylight_progress(sunrise_str, sunset_str):
 
     bar_len = 10
     filled = round(pct / 100 * bar_len)
-    bar = ":sunny:" + ":yellow_square:" * filled + ":black_large_square:" * (bar_len - filled) + ":crescent_moon:"
+    bar = ":sunny:" + ":large_orange_square:" * filled + ":black_large_square:" * (bar_len - filled) + ":crescent_moon:"
 
     remaining = sunset - now
     hours = int(remaining.total_seconds() // 3600)
@@ -555,7 +555,7 @@ def get_health_risks(temp, humidity, wind_ms, uv, pm25):
 
     # 호흡기 (대기질)
     if pm25 is not None and pm25 > 75:
-        risks.append(":lungs: *호흡기 주의* — 초미세먼지 매우 나쁨. 외출 시 KF94 마스크 필수!")
+        risks.append(":mask: *호흡기 주의* — 초미세먼지 매우 나쁨. 외출 시 KF94 마스크 필수!")
     elif pm25 is not None and pm25 > 35:
         risks.append(":mask: *호흡기 유의* — 미세먼지 나쁨. 호흡기 질환자 외출 자제.")
 
@@ -643,7 +643,7 @@ def calc_food_safety_index(temp, humidity):
     if temp >= 30 and humidity >= 70:
         return "경고 :warning:"
     if temp >= 26 and humidity >= 60:
-        return "주의 :yellow_circle:"
+        return "주의 :warning:"
     if temp >= 20:
         return "관심 :eyes:"
     return "안전 :white_check_mark:"
@@ -657,10 +657,10 @@ def get_activity_suggestions(temp, feels_like, main_weather, wind_ms, precip_pro
         return ":house: 실내 카페 · 영화 · 독서 · 쇼핑몰"
 
     if temp <= 0:
-        return ":cup_with_straw: 따뜻한 카페 · 실내 운동 · 온천/찜질방"
+        return ":coffee: 따뜻한 카페 · 실내 운동 · 온천/찜질방"
 
     if temp <= 10:
-        return ":hiking_boot: 가벼운 산책 · 미술관/박물관 · 실내 운동"
+        return ":footprints: 가벼운 산책 · 미술관/박물관 · 실내 운동"
 
     if temp >= 30:
         return ":swimmer: 수영 · 워터파크 · 에어컨 있는 실내"
@@ -696,7 +696,7 @@ def get_outfit_recommendation(temp, feels_like, main_weather, precip_prob):
     t = feels_like
 
     if t <= -10:
-        outfit = ":scarf: 패딩·롱패딩, 목도리, 장갑, 귀마개, 기모 안감"
+        outfit = ":cold_face: 패딩·롱패딩, 목도리, 장갑, 귀마개, 기모 안감"
     elif t <= -5:
         outfit = ":coat: 두꺼운 패딩, 목도리, 장갑, 기모 바지"
     elif t <= 0:
@@ -712,15 +712,15 @@ def get_outfit_recommendation(temp, feels_like, main_weather, precip_prob):
     elif t <= 25:
         outfit = ":tshirt: 반팔·얇은 셔츠, 면바지·린넨"
     elif t <= 30:
-        outfit = ":shorts: 반팔·민소매, 반바지·린넨 바지"
+        outfit = ":tshirt: 반팔·민소매, 반바지·린넨 바지"
     else:
-        outfit = ":shorts: 민소매·나시, 반바지, 통풍 잘 되는 옷"
+        outfit = ":tshirt: 민소매·나시, 반바지, 통풍 잘 되는 옷"
 
     extras = []
     if main_weather in ("Rain", "Drizzle", "Thunderstorm") or (precip_prob and precip_prob >= 50):
         extras.append(":umbrella: 우산")
     if main_weather == "Snow":
-        extras.append(":boot: 방수 신발")
+        extras.append(":shoe: 방수 신발")
 
     if extras:
         outfit += " + " + " ".join(extras)
@@ -755,7 +755,7 @@ def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
         else:
             tips.append(":snowflake: 눈이 내려요! 빙판길 조심하세요.")
     elif temp <= 0 and precip_prob is not None and precip_prob >= 30:
-        tips.append(":ice_cube: 영하에 강수 확률이 있어요. 도로 결빙에 주의하세요.")
+        tips.append(":snowflake: 영하에 강수 확률이 있어요. 도로 결빙에 주의하세요.")
 
     # ── 기온 관련 ──
     if temp <= -10:
@@ -763,7 +763,7 @@ def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
     elif temp <= -5:
         tips.append(":cold_face: 매서운 추위입니다. 내복과 두꺼운 외투 필수!")
     elif temp <= 0:
-        tips.append(":ice_cube: 영하입니다. 목도리, 장갑 챙기세요.")
+        tips.append(":snowflake: 영하입니다. 목도리, 장갑 챙기세요.")
     elif temp <= 5:
         tips.append(":coat: 쌀쌀합니다. 따뜻한 외투를 입으세요.")
     elif temp <= 10:
@@ -791,7 +791,7 @@ def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
     elif humidity >= 80 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
         tips.append(":droplet: 습도가 높아요. 불쾌지수가 높을 수 있습니다.")
     elif humidity <= 20:
-        tips.append(":desert: 공기가 매우 건조합니다. 보습제를 바르고 물을 자주 마시세요.")
+        tips.append(":cactus: 공기가 매우 건조합니다. 보습제를 바르고 물을 자주 마시세요.")
     elif humidity <= 30:
         tips.append(":dash: 건조한 날씨예요. 수분 섭취와 피부 보습에 신경 쓰세요.")
 
