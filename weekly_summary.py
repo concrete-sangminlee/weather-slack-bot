@@ -60,7 +60,7 @@ def build_weekly_summary():
         day = WEEKDAYS[dt.weekday()]
         code = daily["weather_code"][i]
         desc, cat = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
-        emoji = WEATHER_EMOJIS.get(cat, ":thermometer:")
+        emoji = WEATHER_EMOJIS.get(cat, "🌡️")
         t_max = daily["temperature_2m_max"][i]
         t_min = daily["temperature_2m_min"][i]
         precip = daily["precipitation_sum"][i]
@@ -85,7 +85,7 @@ def build_weekly_summary():
         day = WEEKDAYS[dt.weekday()]
         code = daily["weather_code"][i]
         desc, cat = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
-        emoji = WEATHER_EMOJIS.get(cat, ":thermometer:")
+        emoji = WEATHER_EMOJIS.get(cat, "🌡️")
         t_max = daily["temperature_2m_max"][i]
         t_min = daily["temperature_2m_min"][i]
         next_lines.append(f"`{dt.month}/{dt.day}({day})` {emoji} {desc}  {t_min:+.0f}° ~ {t_max:+.0f}°")
@@ -95,26 +95,26 @@ def build_weekly_summary():
     blocks = [
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": f":bar_chart: {CITY_NAME} 주간 날씨 요약", "emoji": True},
+            "text": {"type": "plain_text", "text": f"📊 {CITY_NAME} 주간 날씨 요약", "emoji": True},
         },
         {
             "type": "context",
-            "elements": [{"type": "mrkdwn", "text": f":calendar: {today}"}],
+            "elements": [{"type": "mrkdwn", "text": f"📅 {today}"}],
         },
         {"type": "divider"},
 
         # 지난주 통계
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": "*:rewind: 지난 7일 요약*"},
+            "text": {"type": "mrkdwn", "text": "*⏪ 지난 7일 요약*"},
         },
         {
             "type": "section",
             "fields": [
-                {"type": "mrkdwn", "text": f":thermometer: *평균 기온*\n{avg_min:.1f}° ~ {avg_max:.1f}°"},
-                {"type": "mrkdwn", "text": f":chart_with_upwards_trend: *최고/최저*\n{highest}° / {lowest}°"},
-                {"type": "mrkdwn", "text": f":rain_cloud: *강수*\n{past_precip_total:.1f}mm ({past_rainy_days}일)"},
-                {"type": "mrkdwn", "text": f":sunny: *맑은 날*\n{7 - past_rainy_days}일"},
+                {"type": "mrkdwn", "text": f"🌡️ *평균 기온*\n{avg_min:.1f}° ~ {avg_max:.1f}°"},
+                {"type": "mrkdwn", "text": f"📈 *최고/최저*\n{highest}° / {lowest}°"},
+                {"type": "mrkdwn", "text": f"🌧️ *강수*\n{past_precip_total:.1f}mm ({past_rainy_days}일)"},
+                {"type": "mrkdwn", "text": f"☀️ *맑은 날*\n{7 - past_rainy_days}일"},
             ],
         },
         {
@@ -126,7 +126,7 @@ def build_weekly_summary():
         # 다음주 전망
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": "*:fast_forward: 다음 7일 전망*"},
+            "text": {"type": "mrkdwn", "text": "*⏩ 다음 7일 전망*"},
         },
         {
             "type": "section",

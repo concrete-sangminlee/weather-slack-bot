@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -692,6 +692,62 @@ def get_activity_suggestions(temp, feels_like, main_weather, wind_ms, precip_pro
     return "🚶 가벼운 외출 · 산책"
 
 
+def get_weather_mood(main_weather, temp, life_score):
+    """날씨 상태에 따른 인격 한줄 메시지"""
+    if life_score >= 85:
+        moods = [
+            "오늘 날씨 완전 최고예요! 기분 좋은 하루 될 거예요 ✨",
+            "이런 날씨에 실내에만 있으면 아까워요! 밖으로 나가보세요 🌈",
+            "날씨가 너무 좋아서 할 말을 잃었어요... 그냥 나가세요 😊",
+        ]
+    elif main_weather in ("Rain", "Drizzle"):
+        moods = [
+            "비 오는 날엔 따뜻한 음료 한 잔이 최고죠 ☕",
+            "촉촉한 빗소리와 함께하는 하루, 나쁘지 않아요 🎵",
+            "우산 챙기셨죠? 안 챙기셨으면 지금이라도! 🌂",
+        ]
+    elif main_weather == "Snow":
+        moods = [
+            "눈 오는 날이에요! 세상이 하얗게 변하는 중 ⛄",
+            "눈길 조심하시고, 따뜻하게 입고 나가세요 ❄️",
+        ]
+    elif main_weather == "Thunderstorm":
+        moods = [
+            "천둥번개 치는 날이에요. 안전한 실내에 계세요! ⛈️",
+            "밖에서 번쩍번쩍! 오늘은 집이 최고예요 🏠",
+        ]
+    elif temp >= 33:
+        moods = [
+            "찜통더위에요... 물 많이 드세요! 진심이에요 💦",
+            "에어컨이 없으면 생존이 불가능한 날이에요 🥵",
+        ]
+    elif temp <= -5:
+        moods = [
+            "으으... 추워서 몸이 자동으로 웅크려져요 🥶",
+            "오늘은 이불 밖이 위험합니다. 진짜로요 🛏️",
+        ]
+    elif main_weather == "Fog":
+        moods = [
+            "안개가 자욱해요. 운전 조심, 서행하세요 🌫️",
+        ]
+    elif life_score <= 35:
+        moods = [
+            "오늘 밖에 나가기 좀 그런 날이에요... 집콕 추천 🏠",
+            "날씨가 좀 험하네요. 무리하지 마세요 💪",
+        ]
+    else:
+        moods = [
+            "무난한 하루가 될 것 같아요. 파이팅! 💪",
+            "오늘도 좋은 하루 보내세요! 날씨 요정이 응원합니다 🧚",
+            "특별한 건 없지만, 그게 또 좋은 거죠 🍃",
+        ]
+
+    # 날짜 기반으로 매일 다른 메시지 선택 (랜덤처럼 보이지만 결정적)
+    from datetime import datetime
+    day_seed = datetime.now().timetuple().tm_yday
+    return moods[day_seed % len(moods)]
+
+
 def get_greeting():
     """시간대별 인사말 (다국어)"""
     hour = datetime.now().hour
@@ -964,6 +1020,7 @@ def build_blocks(data, air_data=None):
     car_wash = calc_car_wash_index(precip_prob, tmr_prob, pm25)
     food_safety = calc_food_safety_index(temp, humidity)
     weekly_trend = build_weekly_trend(data) if DISPLAY.get("show_weekly_trend", True) else ""
+    mood = get_weather_mood(main_weather, temp, life_score)
 
     # 한줄 요약
     summary = f"{emoji} {temp}°C (체감 {feels_like}°C) · {description} · 습도 {humidity}% · 바람 {wind_speed}m/s"
@@ -983,6 +1040,10 @@ def build_blocks(data, air_data=None):
         {
             "type": "context",
             "elements": [{"type": "mrkdwn", "text": f"📅 {today} · {summary}"}],
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"_{mood}_"},
         },
         {"type": "divider"},
 

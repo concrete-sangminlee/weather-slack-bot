@@ -47,29 +47,29 @@ def check_alerts():
     alerts = []
 
     if temp >= T_HIGH:
-        alerts.append((":fire:", "폭염 경보", f"현재 기온 *{temp}°C* (체감 {feels}°C). 야외 활동을 즉시 중단하세요."))
+        alerts.append(("🔥", "폭염 경보", f"현재 기온 *{temp}°C* (체감 {feels}°C). 야외 활동을 즉시 중단하세요."))
     elif temp <= T_LOW:
-        alerts.append((":cold_face:", "한파 경보", f"현재 기온 *{temp}°C* (체감 {feels}°C). 동파 방지, 외출 자제."))
+        alerts.append(("🥶", "한파 경보", f"현재 기온 *{temp}°C* (체감 {feels}°C). 동파 방지, 외출 자제."))
 
     if wind >= W_SPEED or gust >= W_GUST:
-        alerts.append((":tornado:", "강풍 경보", f"풍속 *{wind} m/s* (돌풍 {gust} m/s). 간판·구조물 낙하 위험!"))
+        alerts.append(("🌪️", "강풍 경보", f"풍속 *{wind} m/s* (돌풍 {gust} m/s). 간판·구조물 낙하 위험!"))
 
     if precip >= P_HEAVY:
-        alerts.append((":ocean:", "폭우 경보", f"현재 강수량 *{precip} mm*. 저지대 침수 위험, 대피 준비."))
+        alerts.append(("🌊", "폭우 경보", f"현재 강수량 *{precip} mm*. 저지대 침수 위험, 대피 준비."))
     elif precip >= P_MOD:
-        alerts.append((":umbrella_with_rain_drops:", "호우 주의", f"현재 강수량 *{precip} mm*. 우산 필수."))
+        alerts.append(("☔", "호우 주의", f"현재 강수량 *{precip} mm*. 우산 필수."))
 
     if cat == "Thunderstorm":
-        alerts.append((":thunder_cloud_and_rain:", "뇌우 경보", "낙뢰 위험! 즉시 실내로 대피하세요."))
+        alerts.append(("⛈️", "뇌우 경보", "낙뢰 위험! 즉시 실내로 대피하세요."))
 
     try:
         air = fetch_air_quality()
         aqi = air["current"].get("us_aqi")
         pm25 = air["current"].get("pm2_5")
         if aqi and aqi > AQI_DANGER:
-            alerts.append((":rotating_light:", "대기질 매우 나쁨", f"AQI *{aqi}*, PM2.5 *{pm25}* µg/m³. 외출 자제, KF94 마스크 필수!"))
+            alerts.append(("🚨", "대기질 매우 나쁨", f"AQI *{aqi}*, PM2.5 *{pm25}* µg/m³. 외출 자제, KF94 마스크 필수!"))
         elif aqi and aqi > AQI_WARN:
-            alerts.append((":mask:", "대기질 나쁨", f"AQI *{aqi}*, PM2.5 *{pm25}* µg/m³. 민감군 외출 자제."))
+            alerts.append(("😷", "대기질 나쁨", f"AQI *{aqi}*, PM2.5 *{pm25}* µg/m³. 민감군 외출 자제."))
     except Exception:
         pass
 
@@ -84,11 +84,11 @@ def send_alerts(alerts):
     blocks = [
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": f":rotating_light: {CITY_NAME} 긴급 날씨 알림", "emoji": True},
+            "text": {"type": "plain_text", "text": f"🚨 {CITY_NAME} 긴급 날씨 알림", "emoji": True},
         },
         {
             "type": "context",
-            "elements": [{"type": "mrkdwn", "text": f":clock1: {now}"}],
+            "elements": [{"type": "mrkdwn", "text": f"🕐 {now}"}],
         },
         {"type": "divider"},
     ]
