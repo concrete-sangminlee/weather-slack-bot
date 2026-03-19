@@ -227,6 +227,64 @@ def cmd_export():
     print(md)
 
 
+def cmd_history():
+    """히스토리에 오늘 데이터 저장 + 통계 출력"""
+    from history import main
+    main()
+
+
+def cmd_json():
+    """날씨 데이터를 JSON으로 출력"""
+    import json as json_mod
+
+    from weather_bot import (
+        PAST_DAYS,
+        WMO_DESCRIPTIONS,
+        calc_discomfort_index,
+        calc_lifestyle_index,
+        fetch_air_quality,
+        fetch_weather,
+        kmh_to_ms,
+        weather_grade,
+    )
+
+    data = fetch_weather()
+    cur = data["current"]
+    daily = data["daily"]
+    idx = PAST_DAYS
+
+    code = cur["weather_code"]
+    desc, _ = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
+
+    aqi = pm25 = None
+    try:
+        air = fetch_air_quality()
+        aqi = air["current"].get("us_aqi")
+        pm25 = air["current"].get("pm2_5")
+    except Exception:
+        pass
+
+    temp = cur["temperature_2m"]
+    hum = cur["relative_humidity_2m"]
+    wind = kmh_to_ms(cur["wind_speed_10m"])
+    prob = daily["precipitation_probability_max"][idx]
+    score = calc_lifestyle_index(temp, hum, wind, None, aqi, prob)
+    grade, color = weather_grade(score)
+
+    output = {
+        "timestamp": cur["time"],
+        "weather": desc,
+        "temperature": {"current": temp, "feels_like": cur["apparent_temperature"],
+                        "max": daily["temperature_2m_max"][idx], "min": daily["temperature_2m_min"][idx]},
+        "humidity": hum,
+        "wind": {"speed_ms": wind, "gust_ms": kmh_to_ms(cur["wind_gusts_10m"])},
+        "precipitation": {"probability": prob, "sum_mm": daily["precipitation_sum"][idx]},
+        "air_quality": {"aqi": aqi, "pm25": pm25},
+        "indices": {"lifestyle": score, "grade": grade, "discomfort": calc_discomfort_index(temp, hum)},
+    }
+    print(json_mod.dumps(output, ensure_ascii=False, indent=2))
+
+
 def cmd_chart():
     from chart import generate_chart
     path = generate_chart()
@@ -250,12 +308,14 @@ commands:
   alert     Extreme weather check
   chart     Generate temperature trend chart
   export    Export weather data as Markdown
+  json      Export weather data as JSON
+  history   Log today's weather & show stats
   version   Show version info
         """,
     )
     parser.add_argument(
         "command",
-        choices=["daily", "digest", "weekly", "alert", "chart", "export", "version"],
+        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "version"],
         help="command to run",
     )
     parser.add_argument(
@@ -278,6 +338,10 @@ commands:
         cmd_chart()
     elif args.command == "export":
         cmd_export()
+    elif args.command == "json":
+        cmd_json()
+    elif args.command == "history":
+        cmd_history()
     elif args.command == "version":
         cmd_version()
 

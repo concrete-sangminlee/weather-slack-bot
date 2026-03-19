@@ -1,5 +1,41 @@
 # Changelog
 
+## v3.1.0 (2026-03-19)
+
+### Added
+- Slack Webhook support (`SLACK_WEBHOOK_URL` — no bot token needed)
+- Weather history logging (`history.py` — saves daily snapshots to JSON, 90-day retention)
+- JSON export (`weather-bot json` — structured JSON output)
+- Markdown export (`weather-bot export` — MD table format)
+- Digest mode in GitHub Actions workflow dropdown
+- Multi-Python CI matrix (3.10, 3.11, 3.12)
+- `--dry-run` flag for daily & digest commands
+- CODE_OF_CONDUCT.md, SECURITY.md
+
+### Changed
+- Unified workflow uses `cli.py` as single entry point
+- pyproject.toml: `weather-bot` CLI entry point, ruff/pytest config merged
+- Type hints on 10+ core functions
+
+## v3.0.0 (2026-03-19)
+
+### Added
+- pip-installable package with CLI entry point
+- Comfort timeline (07-21h hourly bar)
+- Wind chill (JAG/TI) & heat index (Rothfusz)
+- Weather grade (A+ to F) with color-coded Slack sidebar
+- Seasonal awareness (25+ Korean holidays & culture events)
+- Weather personality (mood-aware daily messages)
+- Golden hour calculator
+- Temperature chart (matplotlib)
+- Extreme weather alerts (3-hour monitoring)
+- i18n (ko/en/ja)
+
+### Changed
+- ALL emoji: Slack shortcodes → Unicode (108 codes)
+- Compact layout (40 → ~32 blocks)
+- Parallel API calls (ThreadPoolExecutor)
+
 ## v2.3.0 (2026-03-19)
 
 ### Added

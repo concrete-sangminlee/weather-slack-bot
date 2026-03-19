@@ -1,6 +1,6 @@
 [project]
 name = "weather-slack-bot"
-version = "3.0.0"
+version = "3.1.0"
 description = "Comprehensive daily weather briefing to Slack — 30+ data points, smart insights, lifestyle indices"
 readme = "README.md"
 license = {text = "MIT"}

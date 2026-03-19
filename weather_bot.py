@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "3.0.0"
+__version__ = "3.1.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
