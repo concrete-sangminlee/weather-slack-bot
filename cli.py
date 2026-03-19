@@ -149,7 +149,6 @@ def cmd_alert():
 
 def cmd_export():
     """날씨 데이터를 마크다운으로 출력"""
-    from datetime import datetime
 
     from weather_bot import (
         CITY_NAME,
@@ -194,7 +193,8 @@ def cmd_export():
     grade, _ = weather_grade(score)
     di = calc_discomfort_index(temp, hum)
     outfit = get_outfit_recommendation(temp, feels, cat, prob)
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    from weather_bot import now_local
+    now = now_local().strftime("%Y-%m-%d %H:%M")
 
     md = f"""# {CITY_NAME} Weather Report
 > {now}

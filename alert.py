@@ -1,7 +1,6 @@
 """긴급 날씨 알림 — 3시간마다 극단적 기상 조건 체크 (config.yml 임계값 사용)"""
 import os
 import sys
-from datetime import datetime
 
 from dotenv import load_dotenv
 from slack_sdk import WebClient
@@ -82,7 +81,8 @@ def send_alerts(alerts):
     if not alerts:
         return
 
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    from weather_bot import now_local
+    now = now_local().strftime("%Y-%m-%d %H:%M")
     blocks = [
         {
             "type": "header",

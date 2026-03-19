@@ -91,7 +91,8 @@ def build_weekly_summary():
         t_min = daily["temperature_2m_min"][i]
         next_lines.append(f"`{dt.month}/{dt.day}({day})` {emoji} {desc}  {t_min:+.0f}° ~ {t_max:+.0f}°")
 
-    today = datetime.now().strftime("%Y년 %m월 %d일")
+    from weather_bot import now_local
+    today = now_local().strftime("%Y년 %m월 %d일")
 
     blocks = [
         {

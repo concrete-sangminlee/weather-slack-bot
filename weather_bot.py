@@ -2,7 +2,7 @@ import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import requests
 from slack_sdk import WebClient
@@ -23,10 +23,25 @@ from config_loader import (
     L,
 )
 
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
+
+# 타임존 매핑 (주요 IANA → UTC offset)
+_TZ_OFFSETS = {
+    "Asia/Seoul": 9, "Asia/Tokyo": 9, "Asia/Shanghai": 8,
+    "US/Eastern": -5, "US/Central": -6, "US/Pacific": -8,
+    "Europe/London": 0, "Europe/Paris": 1, "Europe/Berlin": 1,
+    "UTC": 0,
+}
+
+
+def now_local() -> datetime:
+    """config의 타임존 기준 현재 시각 반환 (naive datetime)"""
+    offset_hours = _TZ_OFFSETS.get(TIMEZONE, 9)
+    tz = timezone(timedelta(hours=offset_hours))
+    return datetime.now(tz).replace(tzinfo=None)
 
 # Open-Meteo WMO Weather Code 매핑
 WMO_DESCRIPTIONS = {
@@ -347,7 +362,7 @@ def calc_heat_index(temp: float, humidity: float) -> float:
 def build_comfort_timeline(data):
     """시간별 쾌적도 타임라인 (07~21시)"""
     hourly = data["hourly"]
-    now = datetime.now()
+    now = now_local()
 
     hours = []
     for i, time_str in enumerate(hourly["time"]):
@@ -421,7 +436,7 @@ def build_comfort_timeline(data):
 def find_best_outdoor_time(data):
     """오늘 시간별 데이터에서 가장 외출하기 좋은 시간대 찾기"""
     hourly = data["hourly"]
-    now = datetime.now()
+    now = now_local()
     best_hour = None
     best_score = -1
 
@@ -537,7 +552,7 @@ def build_weekly_trend(data):
 
 def calc_daylight_progress(sunrise_str, sunset_str):
     """현재 시각이 일출~일몰 중 어디인지 프로그레스 바로 표현"""
-    now = datetime.now()
+    now = now_local()
     sunrise = datetime.fromisoformat(sunrise_str)
     sunset = datetime.fromisoformat(sunset_str)
 
@@ -563,7 +578,7 @@ def calc_daylight_progress(sunrise_str, sunset_str):
 
 def get_moon_phase() -> str:
     """현재 달의 위상 계산 (Conway's method)"""
-    now = datetime.now()
+    now = now_local()
     year = now.year
     month = now.month
     day = now.day
@@ -808,7 +823,7 @@ def get_activity_suggestions(temp, feels_like, main_weather, wind_ms, precip_pro
 
 def get_seasonal_note():
     """한국 계절/절기 기반 메시지"""
-    now = datetime.now()
+    now = now_local()
     month = now.month
     day = now.day
 
@@ -918,14 +933,13 @@ def get_weather_mood(main_weather, temp, life_score):
         ]
 
     # 날짜 기반으로 매일 다른 메시지 선택 (랜덤처럼 보이지만 결정적)
-    from datetime import datetime
-    day_seed = datetime.now().timetuple().tm_yday
+    day_seed = now_local().timetuple().tm_yday
     return moods[day_seed % len(moods)]
 
 
 def get_greeting() -> str:
     """시간대별 인사말 (다국어)"""
-    hour = datetime.now().hour
+    hour = now_local().hour
     g = L["greeting"]
     if hour < 6:
         return g["dawn"]
@@ -1199,7 +1213,7 @@ def build_blocks(data, air_data=None):
         summary += f" · 💧{precip_prob}%"
 
     WEEKDAYS_KR = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
-    now = datetime.now()
+    now = now_local()
     today = now.strftime("%Y년 %m월 %d일") + " " + WEEKDAYS_KR[now.weekday()]
 
     blocks = [
@@ -1421,7 +1435,7 @@ def _build_air_quality_blocks(aqi, pm25, pm10, co, no2, o3):
 
 def _build_hourly_blocks(data):
     hourly = data["hourly"]
-    now = datetime.now()
+    now = now_local()
     current_hour = now.hour
 
     lines = []
@@ -1585,7 +1599,7 @@ def get_bot_identity(main_weather: str) -> tuple[str, str]:
 def get_weather_quote(main_weather: str) -> str:
     """날씨에 맞는 명언/한줄"""
     quotes = WEATHER_QUOTES.get(main_weather, WEATHER_QUOTES["Clear"])
-    day_seed = datetime.now().timetuple().tm_yday
+    day_seed = now_local().timetuple().tm_yday
     return quotes[day_seed % len(quotes)]
 
 
@@ -1728,7 +1742,7 @@ def send_error_to_slack(error_msg):
                 {
                     "type": "context",
                     "elements": [
-                        {"type": "mrkdwn", "text": f"🕐 {datetime.now().strftime('%Y-%m-%d %H:%M')} | <https://github.com/concrete-sangminlee/weather-slack-bot/actions|GitHub Actions 확인>"},
+                        {"type": "mrkdwn", "text": f"🕐 {now_local().strftime('%Y-%m-%d %H:%M')} | <https://github.com/concrete-sangminlee/weather-slack-bot/actions|GitHub Actions 확인>"},
                     ],
                 },
             ],

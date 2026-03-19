@@ -1,6 +1,5 @@
 """날씨 히스토리 로깅 — 매일 데이터를 JSON에 저장하여 트렌드 추적"""
 import json
-from datetime import datetime
 from pathlib import Path
 
 from weather_bot import (
@@ -13,6 +12,7 @@ from weather_bot import (
     fetch_weather,
     format_time,
     kmh_to_ms,
+    now_local,
     weather_grade,
 )
 
@@ -61,7 +61,7 @@ def log_today():
     grade, _ = weather_grade(score)
 
     record = {
-        "date": datetime.now().strftime("%Y-%m-%d"),
+        "date": now_local().strftime("%Y-%m-%d"),
         "time": cur["time"],
         "city": CITY_NAME,
         "weather": desc,
