@@ -1,0 +1,4 @@
+include config.yml
+include locales/*.yml
+include LICENSE
+include CHANGELOG.md
