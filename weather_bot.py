@@ -23,7 +23,7 @@ from config_loader import (
     L,
 )
 
-__version__ = "3.5.0"
+__version__ = "4.0.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5

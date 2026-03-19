@@ -401,6 +401,144 @@ def test_history_log():
     assert stats["days"] == 1
 
 
+# ── 극한 날씨 조건 테스트 ──
+
+def test_tips_heatwave():
+    tips = wb.generate_tips("Clear", 36, 38, 37, 30, 75, 10, 3, 5, 10, 0, 20, 0)
+    tip_text = " ".join(tips)
+    assert "폭염" in tip_text or "극심" in tip_text
+
+
+def test_tips_snow():
+    tips = wb.generate_tips("Snow", -2, -5, 0, -5, 60, 1, 3, 5, 80, 5, 90, 8)
+    tip_text = " ".join(tips)
+    assert "폭설" in tip_text or "눈" in tip_text
+
+
+def test_tips_thunderstorm():
+    tips = wb.generate_tips("Thunderstorm", 20, 19, 22, 18, 80, 3, 3, 5, 90, 20, 95, 0)
+    tip_text = " ".join(tips)
+    assert "뇌우" in tip_text
+
+
+def test_tips_fog():
+    tips = wb.generate_tips("Fog", 10, 9, 12, 8, 95, 1, 2, 3, 0, 0, 100, 0)
+    tip_text = " ".join(tips)
+    assert "안개" in tip_text
+
+
+def test_tips_dry():
+    tips = wb.generate_tips("Clear", 15, 14, 18, 10, 15, 5, 3, 5, 0, 0, 20, 0)
+    tip_text = " ".join(tips)
+    assert "건조" in tip_text
+
+
+def test_tips_high_humidity():
+    tips = wb.generate_tips("Clouds", 25, 26, 28, 22, 92, 5, 3, 5, 0, 0, 80, 0)
+    tip_text = " ".join(tips)
+    assert "습도" in tip_text
+
+
+def test_tips_strong_wind():
+    tips = wb.generate_tips("Clear", 15, 10, 18, 12, 50, 5, 15, 22, 0, 0, 20, 0)
+    tip_text = " ".join(tips)
+    assert "강풍" in tip_text or "돌풍" in tip_text
+
+
+def test_tips_uv_extreme():
+    tips = wb.generate_tips("Clear", 30, 32, 33, 27, 40, 12, 3, 5, 0, 0, 10, 0, None, None)
+    tip_text = " ".join(tips)
+    assert "자외선" in tip_text
+
+
+def test_tips_bad_air():
+    tips = wb.generate_tips("Clear", 20, 19, 22, 18, 50, 5, 3, 5, 0, 0, 20, 0, 180, 80)
+    tip_text = " ".join(tips)
+    assert "미세먼지" in tip_text or "마스크" in tip_text
+
+
+def test_outfit_mild():
+    outfit = wb.get_outfit_recommendation(18, 17, "Clear", 0)
+    assert "셔츠" in outfit or "긴팔" in outfit
+
+
+def test_outfit_snow():
+    outfit = wb.get_outfit_recommendation(-2, -5, "Snow", 70)
+    assert "방수" in outfit or "우산" in outfit
+
+
+def test_activity_cold():
+    act = wb.get_activity_suggestions(-5, -10, "Clear", 5, 0, 1)
+    assert "카페" in act or "실내" in act
+
+
+def test_activity_hot():
+    act = wb.get_activity_suggestions(33, 35, "Clear", 2, 0, 9)
+    assert "수영" in act or "에어컨" in act
+
+
+def test_health_no_risk_pleasant():
+    risks = wb.get_health_risks(22, 50, 3, 4, 15)
+    assert len(risks) == 0
+
+
+def test_health_uv_burn():
+    risks = wb.get_health_risks(28, 50, 3, 9, 10)
+    assert any("피부" in r or "자외선" in r for r in risks)
+
+
+def test_health_frostbite():
+    risks = wb.get_health_risks(-12, 30, 8, 1, 10)
+    assert any("동상" in r for r in risks)
+
+
+def test_discomfort_hot_humid():
+    di = wb.calc_discomfort_index(32, 85)
+    assert "불쾌" in wb.discomfort_label(di)
+
+
+def test_laundry_rainy():
+    score = wb.calc_laundry_index(10, 85, 1, 90)
+    assert score <= 25
+    assert "나쁨" in wb.laundry_label(score) or "매우" in wb.laundry_label(score)
+
+
+def test_food_safety_warning():
+    result = wb.calc_food_safety_index(31, 72)
+    assert "경고" in result
+
+
+def test_seasonal_march():
+    # 3월 19일이면 봄 메시지
+    note = wb.get_seasonal_note()
+    assert note is None or isinstance(note, str)
+
+
+def test_weather_mood_rain():
+    mood = wb.get_weather_mood("Rain", 15, 60)
+    assert isinstance(mood, str)
+    assert len(mood) > 5
+
+
+def test_weather_mood_extreme_hot():
+    mood = wb.get_weather_mood("Clear", 36, 20)
+    assert isinstance(mood, str)
+
+
+def test_weather_mood_extreme_cold():
+    mood = wb.get_weather_mood("Clear", -8, 15)
+    assert isinstance(mood, str)
+
+
+def test_validate_weather_data():
+    data = wb.fetch_weather()
+    assert wb.validate_weather_data(data) is True
+
+
+def test_validate_bad_data():
+    assert wb.validate_weather_data({"current": {"temperature_2m": 999}}) is False
+
+
 def test_build_fallback_text():
     data = wb.fetch_weather()
     text = wb.build_fallback_text(data)
