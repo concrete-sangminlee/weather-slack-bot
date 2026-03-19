@@ -2,7 +2,7 @@ name: Update Weather Badge
 
 on:
   schedule:
-    - cron: '5 22 * * *'  # 매일 7:05 AM KST (날씨 전송 후)
+    - cron: '35 22 * * *'
   workflow_dispatch:
 
 permissions:

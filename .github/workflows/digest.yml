@@ -2,8 +2,7 @@ name: Noon Digest
 
 on:
   schedule:
-    # 정오 12시 KST (= UTC 03:00)
-    - cron: '0 3 * * *'
+    - cron: '30 3 * * *'
   workflow_dispatch:
 
 jobs:
