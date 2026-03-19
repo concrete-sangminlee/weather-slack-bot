@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "3.2.0"
+__version__ = "3.3.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -121,6 +121,22 @@ def _request_with_retry(url, params):
             if attempt == MAX_RETRIES - 1:
                 raise
             time.sleep(RETRY_DELAY * (attempt + 1))
+
+
+def validate_weather_data(data: dict) -> bool:
+    """API 응답 데이터 무결성 검증"""
+    try:
+        cur = data["current"]
+        assert "temperature_2m" in cur
+        assert "weather_code" in cur
+        assert -80 <= cur["temperature_2m"] <= 60, f"비정상 기온: {cur['temperature_2m']}"
+        assert 0 <= cur["relative_humidity_2m"] <= 100
+        assert "daily" in data
+        assert "hourly" in data
+        return True
+    except (KeyError, AssertionError) as e:
+        print(f"⚠️ 데이터 검증 실패: {e}", file=sys.stderr)
+        return False
 
 
 def fetch_weather():
@@ -1748,6 +1764,9 @@ def main():
                 air_data = air_future.result()
             except Exception:
                 air_data = None
+
+        if not validate_weather_data(data):
+            raise ValueError("날씨 데이터 검증 실패")
 
         blocks, color, weather_cat = build_blocks(data, air_data)
         fallback_text = build_fallback_text(data)

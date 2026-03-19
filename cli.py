@@ -291,6 +291,52 @@ def cmd_chart():
     print(f"Chart saved: {path}")
 
 
+def cmd_stats():
+    """프로젝트 + 날씨 히스토리 통계"""
+    from pathlib import Path
+
+    from weather_bot import __version__
+
+    project = Path(__file__).parent
+
+    # 코드 통계
+    total_lines = 0
+    py_files = 0
+    for f in project.glob("*.py"):
+        py_files += 1
+        total_lines += len(f.read_text().splitlines())
+
+    test_lines = 0
+    for f in project.glob("tests/*.py"):
+        test_lines += len(f.read_text().splitlines())
+
+    # 히스토리 통계
+    history_info = ""
+    try:
+        from history import get_stats, load_history
+        h = load_history()
+        if h:
+            s = get_stats(len(h))
+            history_info = (
+                f"\n📊 Weather History ({len(h)} days recorded)\n"
+                f"   Avg temp: {s['avg_temp']}°C | High: {s['highest']}°C | Low: {s['lowest']}°C\n"
+                f"   Rainy days: {s['rainy_days']} | Avg score: {s['avg_score']}/100"
+            )
+    except Exception:
+        pass
+
+    print(f"""weather-slack-bot v{__version__}
+
+📦 Code Stats
+   Python files: {py_files} ({total_lines:,} lines)
+   Test lines: {test_lines:,}
+   Workflows: {len(list(project.glob('.github/workflows/*.yml')))}
+   Locales: {len(list(project.glob('locales/*.yml')))}
+{history_info}
+
+🔗 https://github.com/concrete-sangminlee/weather-slack-bot""")
+
+
 def cmd_version():
     from weather_bot import __version__
     print(f"weather-slack-bot v{__version__}")
@@ -310,12 +356,13 @@ commands:
   export    Export weather data as Markdown
   json      Export weather data as JSON
   history   Log today's weather & show stats
+  stats     Project + weather history statistics
   version   Show version info
         """,
     )
     parser.add_argument(
         "command",
-        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "version"],
+        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "stats", "version"],
         help="command to run",
     )
     parser.add_argument(
@@ -342,6 +389,8 @@ commands:
         cmd_json()
     elif args.command == "history":
         cmd_history()
+    elif args.command == "stats":
+        cmd_stats()
     elif args.command == "version":
         cmd_version()
 
