@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -318,6 +318,102 @@ def lifestyle_label(score):
 def lifestyle_bar(score):
     filled = round(score / 10)
     return "🟩" * filled + "⬜" * (10 - filled)
+
+
+def calc_wind_chill(temp, wind_ms):
+    """윈드칠 공식 (JAG/TI, 10°C 이하 + 풍속 1.3m/s 이상)"""
+    wind_kmh = wind_ms * 3.6
+    if temp > 10 or wind_kmh < 4.8:
+        return temp
+    wc = 13.12 + 0.6215 * temp - 11.37 * (wind_kmh ** 0.16) + 0.3965 * temp * (wind_kmh ** 0.16)
+    return round(wc, 1)
+
+
+def calc_heat_index(temp, humidity):
+    """열지수 (Rothfusz, 27°C 이상 + 습도 40% 이상)"""
+    if temp < 27 or humidity < 40:
+        return temp
+    t = temp
+    r = humidity
+    hi = (-8.7847 + 1.6114 * t + 2.3385 * r - 0.1461 * t * r
+          - 0.01231 * t**2 - 0.01642 * r**2
+          + 0.002212 * t**2 * r + 0.0007255 * t * r**2
+          - 0.000003582 * t**2 * r**2)
+    return round(hi, 1)
+
+
+def build_comfort_timeline(data):
+    """시간별 쾌적도 타임라인 (07~21시)"""
+    hourly = data["hourly"]
+    now = datetime.now()
+
+    hours = []
+    for i, time_str in enumerate(hourly["time"]):
+        dt = datetime.fromisoformat(time_str)
+        if dt.date() != now.date():
+            continue
+        if dt.hour < 7 or dt.hour > 21:
+            continue
+
+        t = hourly["temperature_2m"][i]
+        hum = hourly["relative_humidity_2m"][i]
+        wind = kmh_to_ms(hourly["wind_speed_10m"][i])
+        prob = hourly["precipitation_probability"][i] or 0
+        code = hourly["weather_code"][i]
+        _, cat = WMO_DESCRIPTIONS.get(code, ("", "Clear"))
+
+        # 쾌적도 점수 (0~10)
+        score = 10
+        if 18 <= t <= 24:
+            pass
+        elif 15 <= t <= 27:
+            score -= 1
+        elif 10 <= t <= 30:
+            score -= 3
+        elif 5 <= t <= 33:
+            score -= 5
+        else:
+            score -= 7
+
+        if 40 <= hum <= 60:
+            pass
+        elif 30 <= hum <= 70:
+            score -= 1
+        else:
+            score -= 2
+
+        if wind >= 8:
+            score -= 2
+        elif wind >= 5:
+            score -= 1
+
+        if prob >= 60:
+            score -= 3
+        elif prob >= 30:
+            score -= 1
+
+        if cat in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
+            score -= 2
+
+        score = max(0, min(10, score))
+
+        # 블록 문자로 표현
+        if score >= 8:
+            block = "🟩"
+        elif score >= 6:
+            block = "🟨"
+        elif score >= 4:
+            block = "🟧"
+        else:
+            block = "🟥"
+
+        hours.append((dt.hour, block, score))
+
+    if not hours:
+        return ""
+
+    bar = "".join(b for _, b, _ in hours)
+    return f"{bar}\n`07 · · 10 · · 13 · · 16 · · 19 · · 21`"
 
 
 def find_best_outdoor_time(data):
@@ -1089,6 +1185,9 @@ def build_blocks(data, air_data=None):
     food_safety = calc_food_safety_index(temp, humidity)
     weekly_trend = build_weekly_trend(data) if DISPLAY.get("show_weekly_trend", True) else ""
     mood = get_weather_mood(main_weather, temp, life_score)
+    comfort_tl = build_comfort_timeline(data)
+    wc = calc_wind_chill(temp, wind_speed)
+    hi = calc_heat_index(temp, humidity)
     grade, grade_color = weather_grade(life_score)
     seasonal = get_seasonal_note()
 
@@ -1130,8 +1229,12 @@ def build_blocks(data, air_data=None):
         *(
             [{
                 "type": "context",
-                "elements": [{"type": "mrkdwn", "text": f"📈 {yesterday_cmp}"}],
-            }] if yesterday_cmp else []
+                "elements": [{"type": "mrkdwn", "text":
+                    f"📈 {yesterday_cmp}"
+                    + (f" · 🧊 풍속냉각 {wc}°C" if wc != temp else "")
+                    + (f" · 🔥 열지수 {hi}°C" if hi != temp else "")
+                }],
+            }] if yesterday_cmp or wc != temp or hi != temp else []
         ),
         {"type": "divider"},
 
@@ -1197,6 +1300,14 @@ def build_blocks(data, air_data=None):
         ),
 
         {"type": "divider"},
+
+        # ── 시간대별 쾌적도 타임라인 ──
+        *(
+            [{
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*🕐 쾌적도 타임라인*\n{comfort_tl}"},
+            }] if comfort_tl else []
+        ),
 
         # ── 생활지수 + 최적 외출 시간 ──
         {
