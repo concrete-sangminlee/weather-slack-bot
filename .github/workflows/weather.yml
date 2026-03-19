@@ -2,8 +2,7 @@ name: Seoul Weather Bot
 
 on:
   schedule:
-    # 매일 아침 7시 KST (= UTC 22:00 전날)
-    - cron: '0 22 * * *'
+    - cron: '0 22 * * *'  # 매일 7 AM KST
   workflow_dispatch:
     inputs:
       mode:
@@ -13,6 +12,7 @@ on:
         type: choice
         options:
           - daily
+          - digest
           - weekly
 
 jobs:
@@ -29,16 +29,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Send daily weather
-        if: ${{ github.event.inputs.mode != 'weekly' }}
+      - name: Send weather
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-        run: python weather_bot.py
-
-      - name: Send weekly summary
-        if: ${{ github.event.inputs.mode == 'weekly' }}
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-        run: python weekly_summary.py
+        run: python cli.py ${{ github.event.inputs.mode || 'daily' }}

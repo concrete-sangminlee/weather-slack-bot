@@ -1528,7 +1528,21 @@ def _get_channels():
     return [SLACK_CHANNEL]
 
 
+SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
+
+
 def send_to_slack(blocks, fallback_text, chart_path=None, color=None):
+    # Webhook 모드 (봇 토큰 불필요, 간단 설정)
+    if SLACK_WEBHOOK_URL:
+        payload = {"text": fallback_text}
+        if color:
+            payload["attachments"] = [{"color": color, "blocks": blocks}]
+        else:
+            payload["blocks"] = blocks
+        requests.post(SLACK_WEBHOOK_URL, json=payload, timeout=10)
+        return
+
+    # Bot Token 모드 (전체 기능)
     client = WebClient(token=SLACK_BOT_TOKEN)
     for channel in _get_channels():
         kwargs = {
@@ -1536,7 +1550,6 @@ def send_to_slack(blocks, fallback_text, chart_path=None, color=None):
             "text": fallback_text,
         }
         if color:
-            # 컬러 사이드바: blocks를 attachment로 감싸서 색상 표시
             kwargs["attachments"] = [{"color": color, "blocks": blocks}]
         else:
             kwargs["blocks"] = blocks
