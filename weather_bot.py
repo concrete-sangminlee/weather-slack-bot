@@ -1156,6 +1156,9 @@ def build_blocks(data, air_data=None):
             },
         },
 
+        # ── 도시 비교 ──
+        *_build_city_comparison_blocks(CONFIG.get("compare_cities", [])),
+
         # ── 푸터 ──
         {
             "type": "context",
@@ -1335,6 +1338,56 @@ def _build_tomorrow_alert_block(alerts):
             "text": {
                 "type": "mrkdwn",
                 "text": "*:crystal_ball: 내일 날씨 변화*\n" + "\n".join(f"• {a}" for a in alerts),
+            },
+        },
+    ]
+
+
+def fetch_city_weather(city):
+    """비교 도시 날씨 간단 조회"""
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": city["latitude"],
+        "longitude": city["longitude"],
+        "current": "temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m",
+        "timezone": TIMEZONE,
+    }
+    return _request_with_retry(url, params)
+
+
+def _build_city_comparison_blocks(compare_cities):
+    """비교 도시 날씨 블록 생성"""
+    if not compare_cities or not DISPLAY.get("show_city_comparison", True):
+        return []
+
+    results = []
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {executor.submit(fetch_city_weather, c): c for c in compare_cities[:3]}
+        for future in as_completed(futures):
+            city = futures[future]
+            try:
+                data = future.result()
+                cur = data["current"]
+                code = cur["weather_code"]
+                desc, cat = WMO_DESCRIPTIONS.get(code, ("알 수 없음", "Clear"))
+                emoji = WEATHER_EMOJIS.get(cat, ":thermometer:")
+                temp = cur["temperature_2m"]
+                hum = cur["relative_humidity_2m"]
+                wind = kmh_to_ms(cur["wind_speed_10m"])
+                results.append(f"{emoji} *{city['name']}* {temp}°C · {desc} · 습도 {hum}% · 바람 {wind}m/s")
+            except Exception:
+                results.append(f":x: *{city['name']}* 데이터 조회 실패")
+
+    if not results:
+        return []
+
+    return [
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*:earth_asia: 다른 도시 날씨*\n" + "\n".join(results),
             },
         },
     ]

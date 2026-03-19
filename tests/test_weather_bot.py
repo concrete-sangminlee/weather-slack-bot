@@ -197,6 +197,52 @@ def test_get_greeting():
     assert len(greeting) > 0
 
 
+# ── 멀티시티 ──
+
+def test_fetch_city_weather():
+    city = {"name": "부산", "latitude": 35.1796, "longitude": 129.0756}
+    data = wb.fetch_city_weather(city)
+    assert "current" in data
+    assert "temperature_2m" in data["current"]
+
+
+def test_city_comparison_empty():
+    blocks = wb._build_city_comparison_blocks([])
+    assert blocks == []
+
+
+def test_city_comparison_with_cities():
+    cities = [{"name": "부산", "latitude": 35.1796, "longitude": 129.0756}]
+    blocks = wb._build_city_comparison_blocks(cities)
+    assert len(blocks) >= 1
+    # 부산이 결과에 포함되어야 함
+    found = False
+    for b in blocks:
+        text = b.get("text", {}).get("text", "")
+        if "부산" in text:
+            found = True
+    assert found
+
+
+# ── 일출/일몰/달 ──
+
+def test_daylight_progress_daytime():
+    # 오늘 일출 06:00, 일몰 19:00 가정
+    from datetime import datetime
+    bar, pct = wb.calc_daylight_progress(
+        datetime.now().replace(hour=6, minute=0).isoformat(),
+        datetime.now().replace(hour=19, minute=0).isoformat(),
+    )
+    assert isinstance(bar, str)
+    assert 0 <= pct <= 100
+
+
+def test_moon_phase():
+    phase = wb.get_moon_phase()
+    assert isinstance(phase, str)
+    assert "달" in phase or "삭" in phase or "보름" in phase
+
+
 # ── API 통합 테스트 ──
 
 def test_fetch_weather():

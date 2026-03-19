@@ -1,11 +1,24 @@
 # Seoul Weather Slack Bot Configuration
 # Customize your weather bot by editing this file.
 
-# City coordinates (find yours at maps.google.com → right-click → copy coordinates)
+# Primary city
 city:
   name: 서울
   latitude: 37.5665
   longitude: 126.9780
+
+# Compare with other cities (optional, max 3)
+# Adds a compact comparison row for each city
+compare_cities:
+  # - name: 부산
+  #   latitude: 35.1796
+  #   longitude: 129.0756
+  # - name: 제주
+  #   latitude: 33.4996
+  #   longitude: 126.5312
+  # - name: Tokyo
+  #   latitude: 35.6762
+  #   longitude: 139.6503
 
 # Schedule timezone (IANA format)
 timezone: Asia/Seoul
@@ -25,3 +38,4 @@ display:
   show_yesterday_comparison: true
   show_best_time: true
   show_weekly_trend: true
+  show_city_comparison: true
