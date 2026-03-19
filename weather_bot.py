@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "3.1.0"
+__version__ = "3.2.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -1372,7 +1372,13 @@ def build_blocks(data, air_data=None):
             }] if seasonal else []
         ),
 
-        # ── 푸터 ──
+        # ── 명언 + 푸터 ──
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f"_{get_weather_quote(main_weather)}_"},
+            ],
+        },
         {
             "type": "context",
             "elements": [
@@ -1384,7 +1390,7 @@ def build_blocks(data, air_data=None):
         },
     ]
 
-    return blocks, grade_color
+    return blocks, grade_color, main_weather
 
 
 def _build_air_quality_blocks(aqi, pm25, pm10, co, no2, o3):
@@ -1530,8 +1536,58 @@ def _get_channels():
 
 SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
 
+# 날씨별 봇 아이콘 + 이름
+BOT_IDENTITIES = {
+    "Clear": (":sunny:", "날씨요정 ☀️"),
+    "Clouds": (":cloud:", "날씨요정 ☁️"),
+    "Rain": (":rain_cloud:", "날씨요정 🌧️"),
+    "Drizzle": (":partly_sunny_rain:", "날씨요정 🌦️"),
+    "Thunderstorm": (":thunder_cloud_and_rain:", "날씨요정 ⛈️"),
+    "Snow": (":snowflake:", "날씨요정 ❄️"),
+    "Fog": (":fog:", "날씨요정 🌫️"),
+}
 
-def send_to_slack(blocks, fallback_text, chart_path=None, color=None):
+WEATHER_QUOTES = {
+    "Clear": [
+        "☀️ 맑은 하늘 아래, 모든 것이 가능합니다.",
+        "☀️ 햇살이 좋은 날, 기분도 화창하게!",
+        "☀️ 오늘의 맑은 날씨처럼, 마음도 맑게.",
+    ],
+    "Clouds": [
+        "☁️ 구름 뒤에는 항상 태양이 있습니다.",
+        "☁️ 흐린 날도 나름의 아름다움이 있죠.",
+    ],
+    "Rain": [
+        "🌧️ 비 온 뒤에 땅이 굳는다. — 한국 속담",
+        "🌧️ 빗소리를 BGM 삼아 집중해보세요.",
+        "🌧️ 비가 와야 무지개도 뜨는 법이죠.",
+    ],
+    "Snow": [
+        "❄️ 첫눈처럼 설레는 하루가 되길.",
+        "❄️ 눈이 오면 세상이 잠시 조용해지죠.",
+    ],
+    "Thunderstorm": [
+        "⛈️ 폭풍우 속에서도 빛은 찾아옵니다.",
+    ],
+    "Fog": [
+        "🌫️ 안개 속에서도 길은 있습니다.",
+    ],
+}
+
+
+def get_bot_identity(main_weather: str) -> tuple[str, str]:
+    """날씨에 따른 봇 아이콘 이모지와 이름"""
+    return BOT_IDENTITIES.get(main_weather, (":partly_sunny:", "날씨요정"))
+
+
+def get_weather_quote(main_weather: str) -> str:
+    """날씨에 맞는 명언/한줄"""
+    quotes = WEATHER_QUOTES.get(main_weather, WEATHER_QUOTES["Clear"])
+    day_seed = datetime.now().timetuple().tm_yday
+    return quotes[day_seed % len(quotes)]
+
+
+def send_to_slack(blocks, fallback_text, chart_path=None, color=None, weather_cat=None):
     # Webhook 모드 (봇 토큰 불필요, 간단 설정)
     if SLACK_WEBHOOK_URL:
         payload = {"text": fallback_text}
@@ -1544,11 +1600,15 @@ def send_to_slack(blocks, fallback_text, chart_path=None, color=None):
 
     # Bot Token 모드 (전체 기능)
     client = WebClient(token=SLACK_BOT_TOKEN)
+    icon_emoji, bot_name = get_bot_identity(weather_cat) if weather_cat else (None, None)
     for channel in _get_channels():
         kwargs = {
             "channel": channel,
             "text": fallback_text,
         }
+        if icon_emoji:
+            kwargs["icon_emoji"] = icon_emoji
+            kwargs["username"] = bot_name
         if color:
             kwargs["attachments"] = [{"color": color, "blocks": blocks}]
         else:
@@ -1689,7 +1749,7 @@ def main():
             except Exception:
                 air_data = None
 
-        blocks, color = build_blocks(data, air_data)
+        blocks, color, weather_cat = build_blocks(data, air_data)
         fallback_text = build_fallback_text(data)
 
         # 차트 생성 (실패해도 메시지는 전송)
@@ -1700,7 +1760,7 @@ def main():
         except Exception:
             pass
 
-        send_to_slack(blocks, fallback_text, chart_path, color)
+        send_to_slack(blocks, fallback_text, chart_path, color, weather_cat)
 
         # 임시 차트 파일 정리
         if chart_path:

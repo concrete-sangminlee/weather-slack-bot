@@ -28,7 +28,7 @@ def cmd_daily(dry_run=False):
     except Exception:
         air_data = None
 
-    blocks, color = build_blocks(data, air_data)
+    blocks, color, weather_cat = build_blocks(data, air_data)
     fallback = build_fallback_text(data)
 
     if dry_run:

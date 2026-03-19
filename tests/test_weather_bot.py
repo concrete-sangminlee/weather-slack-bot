@@ -309,11 +309,12 @@ def test_fetch_air_quality():
 def test_build_blocks():
     data = wb.fetch_weather()
     air = wb.fetch_air_quality()
-    blocks, color = wb.build_blocks(data, air)
+    blocks, color, weather_cat = wb.build_blocks(data, air)
     assert isinstance(blocks, list)
     assert len(blocks) > 20
     assert blocks[0]["type"] == "header"
     assert color.startswith("#")
+    assert weather_cat in wb.WEATHER_EMOJIS or weather_cat == "Clear"
 
 
 def test_weather_grade():
@@ -350,6 +351,29 @@ def test_cli_version():
     import cli
     # version 명령이 에러 없이 실행되는지 확인
     cli.cmd_version()
+
+
+def test_bot_identity():
+    icon, name = wb.get_bot_identity("Clear")
+    assert ":sunny:" in icon
+    assert "날씨요정" in name
+
+
+def test_weather_quote():
+    quote = wb.get_weather_quote("Rain")
+    assert isinstance(quote, str)
+    assert len(quote) > 5
+
+
+def test_history_log():
+    import history
+    record = history.log_today()
+    assert record["city"] == wb.CITY_NAME
+    assert "temp" in record
+    assert "grade" in record
+
+    stats = history.get_stats(1)
+    assert stats["days"] == 1
 
 
 def test_build_fallback_text():
