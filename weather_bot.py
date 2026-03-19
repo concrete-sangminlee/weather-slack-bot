@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -1376,7 +1376,10 @@ def build_blocks(data, air_data=None):
         {
             "type": "context",
             "elements": [
-                {"type": "mrkdwn", "text": f"v{__version__} · Powered by Open-Meteo API | <https://github.com/concrete-sangminlee/weather-slack-bot|GitHub>"},
+                {"type": "mrkdwn", "text":
+                    f"v{__version__} · 📡 {cur['time']} 기준"
+                    f" · <https://github.com/concrete-sangminlee/weather-slack-bot|GitHub>"
+                },
             ],
         },
     ]

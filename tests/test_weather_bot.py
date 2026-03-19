@@ -330,6 +330,28 @@ def test_seasonal_note():
     assert note is None or isinstance(note, str)
 
 
+def test_wind_chill():
+    assert wb.calc_wind_chill(5, 10) < 5  # 풍속냉각으로 체감 더 낮음
+    assert wb.calc_wind_chill(20, 5) == 20  # 10°C 이상이면 적용 안 됨
+
+
+def test_heat_index():
+    assert wb.calc_heat_index(35, 70) > 35  # 열지수로 체감 더 높음
+    assert wb.calc_heat_index(20, 50) == 20  # 27°C 미만이면 적용 안 됨
+
+
+def test_comfort_timeline():
+    data = wb.fetch_weather()
+    tl = wb.build_comfort_timeline(data)
+    assert isinstance(tl, str)
+
+
+def test_cli_version():
+    import cli
+    # version 명령이 에러 없이 실행되는지 확인
+    cli.cmd_version()
+
+
 def test_build_fallback_text():
     data = wb.fetch_weather()
     text = wb.build_fallback_text(data)

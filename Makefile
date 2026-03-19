@@ -1,22 +1,28 @@
-.PHONY: run weekly alert chart test install docker-build docker-run
+.PHONY: run weekly alert chart test lint install docker-build docker-run
 
 install:
 	pip install -r requirements.txt
 
 run:
-	python weather_bot.py
+	python cli.py daily
 
 weekly:
-	python weekly_summary.py
+	python cli.py weekly
 
 alert:
-	python alert.py
+	python cli.py alert
 
 chart:
-	python chart.py
+	python cli.py chart
+
+version:
+	python cli.py version
 
 test:
 	pytest tests/ -v
+
+lint:
+	ruff check .
 
 docker-build:
 	docker build -t weather-slack-bot .

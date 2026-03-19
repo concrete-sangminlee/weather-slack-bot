@@ -235,10 +235,12 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 ## 📁 Project Structure
 
 ```
+├── cli.py                      # Unified CLI (daily/weekly/alert/chart/version)
 ├── weather_bot.py              # Main bot — daily weather briefing
 ├── weekly_summary.py           # Weekly summary — past 7 days + next 7 days
 ├── alert.py                    # Extreme weather alert checker
 ├── chart.py                    # Temperature trend chart generator
+├── SECURITY.md                 # Security policy
 ├── config.yml                  # All settings (city, locale, display, forecast)
 ├── CHANGELOG.md                # Version history
 ├── locales/                    # i18n language packs
@@ -250,7 +252,7 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 ├── Dockerfile                  # Container support
 ├── Makefile                    # Dev shortcuts
 ├── tests/
-│   └── test_weather_bot.py     # 44 unit & integration tests
+│   └── test_weather_bot.py     # 50 unit & integration tests
 ├── docs/
 │   └── index.html              # GitHub Pages landing page
 └── .github/
@@ -274,11 +276,16 @@ docker run --env-file .env weather-slack-bot
 ### Makefile
 
 ```bash
-make install    # Install dependencies
-make run        # Run bot locally
-make test       # Run test suite
-make docker-build  # Build Docker image
-make docker-run    # Run in Docker
+make run          # Send daily weather
+make weekly       # Send weekly summary
+make alert        # Check extreme weather
+make chart        # Generate trend chart
+make version      # Show version
+make test         # Run 50 tests
+make lint         # Run ruff linter
+make install      # Install dependencies
+make docker-build # Build Docker image
+make docker-run   # Run in Docker
 ```
 
 ---
