@@ -416,6 +416,72 @@ def cmd_stats():
 🔗 https://github.com/concrete-sangminlee/weather-slack-bot""")
 
 
+def cmd_setup():
+    """대화형 초기 설정 마법사"""
+    from pathlib import Path
+
+    print("🧙 Weather Slack Bot 설정 마법사")
+    print("=" * 40)
+
+    root = Path(__file__).parent
+
+    # 1. .env 파일 확인/생성
+    env_path = root / ".env"
+    if env_path.exists():
+        print("✅ .env 파일 이미 존재")
+    else:
+        print("\n📌 Slack 연동 방식 선택:")
+        print("  1) Bot Token (추천 — 전체 기능)")
+        print("  2) Webhook (간편 — 기본 기능)")
+        choice = input("선택 (1/2): ").strip()
+
+        if choice == "2":
+            url = input("Webhook URL: ").strip()
+            env_path.write_text(f"SLACK_WEBHOOK_URL={url}\n")
+        else:
+            token = input("Bot Token (xoxb-...): ").strip()
+            channel = input("채널명 (예: general): ").strip() or "general"
+            env_path.write_text(f"SLACK_BOT_TOKEN={token}\nSLACK_CHANNEL={channel}\n")
+        print("✅ .env 저장 완료")
+
+    # 2. config.yml 도시 설정
+    print(f"\n📍 현재 도시: {root / 'config.yml'}")
+    change = input("도시를 변경하시겠습니까? (y/N): ").strip().lower()
+    if change == "y":
+        import yaml
+        config_path = root / "config.yml"
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+
+        name = input("도시 이름: ").strip()
+        lat = input("위도 (예: 37.5665): ").strip()
+        lon = input("경도 (예: 126.9780): ").strip()
+
+        if name and lat and lon:
+            config["city"]["name"] = name
+            config["city"]["latitude"] = float(lat)
+            config["city"]["longitude"] = float(lon)
+            config_path.write_text(
+                yaml.dump(config, allow_unicode=True, default_flow_style=False),
+                encoding="utf-8",
+            )
+            print(f"✅ 도시 변경: {name} ({lat}, {lon})")
+
+    # 3. 테스트 실행
+    print("\n🧪 연결 테스트 중...")
+    try:
+        from weather_bot import fetch_weather
+        data = fetch_weather()
+        temp = data["current"]["temperature_2m"]
+        print(f"✅ 날씨 API 연결 성공! 현재 기온: {temp}°C")
+    except Exception as e:
+        print(f"❌ API 오류: {e}")
+        return
+
+    print("\n🎉 설정 완료! 다음 명령어로 테스트하세요:")
+    print("   weather-bot daily --dry-run")
+    print("   weather-bot daily")
+
+
 def cmd_version():
     from weather_bot import __version__
     print(f"weather-slack-bot v{__version__}")
@@ -438,12 +504,13 @@ commands:
   analytics Full history analysis report
   compare   Compare last 2 days from history
   stats     Project + weather history statistics
+  setup     Interactive setup wizard
   version   Show version info
         """,
     )
     parser.add_argument(
         "command",
-        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "analytics", "compare", "stats", "version"],
+        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "analytics", "compare", "stats", "setup", "version"],
         help="command to run",
     )
     parser.add_argument(
@@ -476,6 +543,8 @@ commands:
         cmd_compare()
     elif args.command == "stats":
         cmd_stats()
+    elif args.command == "setup":
+        cmd_setup()
     elif args.command == "version":
         cmd_version()
 

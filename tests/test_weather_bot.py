@@ -349,8 +349,33 @@ def test_comfort_timeline():
 
 def test_cli_version():
     import cli
-    # version 명령이 에러 없이 실행되는지 확인
     cli.cmd_version()
+
+
+def test_cli_stats():
+    import cli
+    cli.cmd_stats()
+
+
+def test_config_validation():
+    from config_loader import validate_config
+    errors = validate_config()
+    assert isinstance(errors, list)
+    assert len(errors) == 0  # 기본 config는 오류 없어야 함
+
+
+def test_forecast_accuracy():
+    from history import check_forecast_accuracy
+    result = check_forecast_accuracy()
+    # 1일만 기록되어 있으면 None
+    assert result is None or isinstance(result, dict)
+
+
+def test_trends():
+    from history import get_trends
+    trends = get_trends()
+    # 3일 미만이면 빈 dict
+    assert isinstance(trends, dict)
 
 
 def test_bot_identity():

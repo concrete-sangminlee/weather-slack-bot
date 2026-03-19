@@ -39,3 +39,28 @@ TREND_DAYS = CONFIG["forecast"].get("trend_days", 7)
 
 # Display
 DISPLAY = CONFIG["display"]
+
+
+def validate_config():
+    """설정 파일 검증"""
+    errors = []
+    if not (-90 <= CITY_LAT <= 90):
+        errors.append(f"위도 범위 오류: {CITY_LAT} (±90)")
+    if not (-180 <= CITY_LON <= 180):
+        errors.append(f"경도 범위 오류: {CITY_LON} (±180)")
+    if not (1 <= DAILY_DAYS <= 16):
+        errors.append(f"daily_days 범위 오류: {DAILY_DAYS} (1~16)")
+    if not (0 <= PAST_DAYS <= 7):
+        errors.append(f"past_days 범위 오류: {PAST_DAYS} (0~7)")
+    if SLACK_BOT_TOKEN and not SLACK_BOT_TOKEN.startswith("xoxb-"):
+        if SLACK_BOT_TOKEN != "test":
+            errors.append("SLACK_BOT_TOKEN은 'xoxb-'로 시작해야 합니다")
+    return errors
+
+
+# 자동 검증 (import 시)
+_errors = validate_config()
+if _errors:
+    import sys
+    for e in _errors:
+        print(f"⚠️ config 오류: {e}", file=sys.stderr)
