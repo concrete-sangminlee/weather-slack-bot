@@ -1,0 +1,37 @@
+name: Log Weather History
+
+on:
+  schedule:
+    - cron: '10 22 * * *'  # 매일 7:10 AM KST (날씨 전송 후)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  log-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Log today's weather
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+        run: python cli.py history
+
+      - name: Commit history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add weather_history.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "📝 Daily weather log [skip ci]"
+          git push || true
