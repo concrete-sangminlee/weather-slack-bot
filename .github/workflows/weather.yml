@@ -20,16 +20,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Debug - Check API key length
-        env:
-          OPENWEATHERMAP_API_KEY: ${{ secrets.OPENWEATHERMAP_API_KEY }}
-        run: echo "API key length:" ${#OPENWEATHERMAP_API_KEY}
-
-      - name: Debug - Test API with curl
-        env:
-          OPENWEATHERMAP_API_KEY: ${{ secrets.OPENWEATHERMAP_API_KEY }}
-        run: curl -s "https://api.openweathermap.org/data/2.5/weather?q=Seoul&appid=${OPENWEATHERMAP_API_KEY}&units=metric" | python -m json.tool
-
       - name: Send weather to Slack
         env:
           OPENWEATHERMAP_API_KEY: ${{ secrets.OPENWEATHERMAP_API_KEY }}
