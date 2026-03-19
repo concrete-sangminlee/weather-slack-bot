@@ -123,6 +123,85 @@ def get_stats(days: int = 7) -> dict:
     }
 
 
+def check_forecast_accuracy():
+    """어제 예보와 오늘 실제 날씨 비교"""
+    history = load_history()
+    if len(history) < 2:
+        return None
+
+    today = history[-1]
+
+    # 어제 예보했던 오늘 최고/최저와 실제 비교
+    # (history에는 당일 관측값만 있으므로, 오늘의 API에서 어제 예보를 역추적)
+    data = fetch_weather()
+    daily = data["daily"]
+
+    # past_days=1이므로 index 0 = 어제 실제, index 1 = 오늘 실제
+    idx = PAST_DAYS
+    actual_max = daily["temperature_2m_max"][idx]
+    actual_min = daily["temperature_2m_min"][idx]
+
+    # 히스토리에 저장된 오늘의 예보값 (아침에 기록된 값)
+    forecast_max = today.get("temp_max")
+    forecast_min = today.get("temp_min")
+
+    if forecast_max is None or actual_max is None:
+        return None
+
+    max_error = abs(actual_max - forecast_max)
+    min_error = abs(actual_min - forecast_min)
+    avg_error = (max_error + min_error) / 2
+
+    return {
+        "date": today["date"],
+        "forecast_max": forecast_max,
+        "actual_max": actual_max,
+        "max_error": round(max_error, 1),
+        "forecast_min": forecast_min,
+        "actual_min": actual_min,
+        "min_error": round(min_error, 1),
+        "avg_error": round(avg_error, 1),
+        "grade": "A" if avg_error < 1 else "B" if avg_error < 2 else "C" if avg_error < 3 else "D",
+    }
+
+
+def get_trends(days: int = 7) -> dict:
+    """기온 트렌드 분석"""
+    history = load_history()
+    recent = history[-days:]
+    if len(recent) < 3:
+        return {}
+
+    temps = [r["temp"] for r in recent]
+
+    # 기온 추세 (상승/하락/유지)
+    first_half = sum(temps[:len(temps) // 2]) / max(len(temps) // 2, 1)
+    second_half = sum(temps[len(temps) // 2:]) / max(len(temps) - len(temps) // 2, 1)
+    diff = second_half - first_half
+
+    if diff > 2:
+        trend = "📈 상승세"
+    elif diff < -2:
+        trend = "📉 하락세"
+    else:
+        trend = "➡️ 유지"
+
+    # 최고/최저 날
+    best_day = max(recent, key=lambda r: r["lifestyle_score"])
+    worst_day = min(recent, key=lambda r: r["lifestyle_score"])
+    hottest = max(recent, key=lambda r: r["temp_max"])
+    coldest = min(recent, key=lambda r: r["temp_min"])
+
+    return {
+        "trend": trend,
+        "trend_diff": round(diff, 1),
+        "best_day": f"{best_day['date']} (등급 {best_day['grade']}, {best_day['lifestyle_score']}점)",
+        "worst_day": f"{worst_day['date']} (등급 {worst_day['grade']}, {worst_day['lifestyle_score']}점)",
+        "hottest": f"{hottest['date']} ({hottest['temp_max']}°C)",
+        "coldest": f"{coldest['date']} ({coldest['temp_min']}°C)",
+    }
+
+
 def main():
     record = log_today()
     print(f"📝 {record['date']} — {record['weather']} {record['temp']}°C (등급 {record['grade']})")
@@ -130,6 +209,12 @@ def main():
     stats = get_stats(7)
     if stats:
         print(f"📊 최근 {stats['days']}일: 평균 {stats['avg_temp']}°C, 최고 {stats['highest']}°C, 최저 {stats['lowest']}°C")
+
+    trends = get_trends()
+    if trends:
+        print(f"📈 기온 추세: {trends['trend']} ({trends['trend_diff']:+.1f}°C)")
+        print(f"   최고의 날: {trends['best_day']}")
+        print(f"   최악의 날: {trends['worst_day']}")
 
 
 if __name__ == "__main__":

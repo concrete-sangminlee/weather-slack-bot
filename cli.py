@@ -291,6 +291,53 @@ def cmd_chart():
     print(f"Chart saved: {path}")
 
 
+def cmd_analytics():
+    """히스토리 종합 분석 리포트"""
+    from history import check_forecast_accuracy, get_stats, get_trends, load_history
+
+    history = load_history()
+    if not history:
+        print("히스토리가 없습니다. `weather-bot history`로 먼저 데이터를 기록하세요.")
+        return
+
+    days = len(history)
+    stats = get_stats(days)
+    trends = get_trends(days)
+    accuracy = check_forecast_accuracy()
+
+    print(f"""📊 날씨 분석 리포트 ({days}일간)
+{'=' * 40}
+
+🌡️ 기온 통계
+   평균: {stats.get('avg_temp', 'N/A')}°C
+   최고: {stats.get('highest', 'N/A')}°C / 최저: {stats.get('lowest', 'N/A')}°C
+   비 온 날: {stats.get('rainy_days', 0)}일
+   평균 생활지수: {stats.get('avg_score', 'N/A')}/100""")
+
+    if trends:
+        print(f"""
+📈 트렌드
+   기온 추세: {trends['trend']} ({trends['trend_diff']:+.1f}°C)
+   최고의 날: {trends['best_day']}
+   최악의 날: {trends['worst_day']}
+   가장 더운 날: {trends['hottest']}
+   가장 추운 날: {trends['coldest']}""")
+
+    if accuracy:
+        print(f"""
+🎯 예보 정확도 (오늘)
+   최고기온: 예보 {accuracy['forecast_max']}°C → 실제 {accuracy['actual_max']}°C (오차 {accuracy['max_error']}°C)
+   최저기온: 예보 {accuracy['forecast_min']}°C → 실제 {accuracy['actual_min']}°C (오차 {accuracy['min_error']}°C)
+   평균 오차: {accuracy['avg_error']}°C — 등급 {accuracy['grade']}""")
+
+    # 히스토리 테이블
+    print("\n📅 최근 기록 (최대 7일)")
+    print(f"{'날짜':12} {'날씨':10} {'기온':>6} {'최고':>6} {'최저':>6} {'등급':>4}")
+    print("-" * 50)
+    for r in history[-7:]:
+        print(f"{r['date']:12} {r['weather']:10} {r['temp']:>5.1f}° {r['temp_max']:>5.1f}° {r['temp_min']:>5.1f}° {r['grade']:>4}")
+
+
 def cmd_compare():
     """히스토리에서 두 날짜 날씨 비교"""
     from history import load_history
@@ -388,6 +435,7 @@ commands:
   export    Export weather data as Markdown
   json      Export weather data as JSON
   history   Log today's weather & show stats
+  analytics Full history analysis report
   compare   Compare last 2 days from history
   stats     Project + weather history statistics
   version   Show version info
@@ -395,7 +443,7 @@ commands:
     )
     parser.add_argument(
         "command",
-        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "compare", "stats", "version"],
+        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "analytics", "compare", "stats", "version"],
         help="command to run",
     )
     parser.add_argument(
@@ -422,6 +470,8 @@ commands:
         cmd_json()
     elif args.command == "history":
         cmd_history()
+    elif args.command == "analytics":
+        cmd_analytics()
     elif args.command == "compare":
         cmd_compare()
     elif args.command == "stats":
