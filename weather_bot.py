@@ -133,6 +133,8 @@ def fetch_weather():
             "wind_speed_10m",
             "wind_direction_10m",
             "wind_gusts_10m",
+            "visibility",
+            "dew_point_2m",
         ]),
         "daily": ",".join([
             "temperature_2m_max",
@@ -201,6 +203,89 @@ def pm_level(pm25):
     if pm25 <= 75:
         return "나쁨"
     return "매우 나쁨"
+
+
+def format_visibility(meters):
+    if meters >= 10000:
+        return f"{meters / 1000:.0f} km (매우 좋음)"
+    if meters >= 5000:
+        return f"{meters / 1000:.1f} km (좋음)"
+    if meters >= 1000:
+        return f"{meters / 1000:.1f} km (보통)"
+    return f"{meters:.0f} m (나쁨)"
+
+
+def calc_lifestyle_index(temp, humidity, wind_ms, uv, aqi, precip_prob):
+    """종합 생활지수 (0~100, 높을수록 좋음)"""
+    score = 100
+
+    # 기온 쾌적도 (18~24가 최적)
+    if 18 <= temp <= 24:
+        pass
+    elif 15 <= temp <= 27:
+        score -= 5
+    elif 10 <= temp <= 30:
+        score -= 15
+    elif 5 <= temp <= 33:
+        score -= 25
+    else:
+        score -= 40
+
+    # 습도 (40~60 최적)
+    if 40 <= humidity <= 60:
+        pass
+    elif 30 <= humidity <= 70:
+        score -= 5
+    else:
+        score -= 15
+
+    # 바람
+    if wind_ms >= 10:
+        score -= 15
+    elif wind_ms >= 5:
+        score -= 5
+
+    # 자외선
+    if uv is not None:
+        if uv >= 8:
+            score -= 10
+        elif uv >= 6:
+            score -= 5
+
+    # 대기질
+    if aqi is not None:
+        if aqi > 150:
+            score -= 20
+        elif aqi > 100:
+            score -= 10
+        elif aqi > 50:
+            score -= 5
+
+    # 강수 확률
+    if precip_prob is not None:
+        if precip_prob >= 70:
+            score -= 15
+        elif precip_prob >= 40:
+            score -= 5
+
+    return max(0, min(100, score))
+
+
+def lifestyle_label(score):
+    if score >= 90:
+        return "최고 :star:"
+    if score >= 75:
+        return "좋음 :large_green_circle:"
+    if score >= 60:
+        return "보통 :large_yellow_circle:"
+    if score >= 40:
+        return "나쁨 :large_orange_circle:"
+    return "매우 나쁨 :red_circle:"
+
+
+def lifestyle_bar(score):
+    filled = round(score / 10)
+    return ":large_green_square:" * filled + ":white_large_square:" * (10 - filled)
 
 
 def get_outfit_recommendation(temp, feels_like, main_weather, precip_prob):
@@ -390,6 +475,8 @@ def build_blocks(data, air_data=None):
     wind_gust = kmh_to_ms(cur["wind_gusts_10m"])
     wind_dir = wind_direction_to_text(cur["wind_direction_10m"])
     precip = cur["precipitation"]
+    visibility = cur.get("visibility", 0)
+    dew_point = cur.get("dew_point_2m")
 
     # past_days=1이면 index 0=어제, 1=오늘; past_days=0이면 0=오늘
     today_idx = PAST_DAYS
@@ -441,6 +528,7 @@ def build_blocks(data, air_data=None):
     )
 
     outfit = get_outfit_recommendation(temp, feels_like, main_weather, precip_prob)
+    life_score = calc_lifestyle_index(temp, humidity, wind_speed, uv_max, aqi, precip_prob)
 
     WEEKDAYS_KR = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
     now = datetime.now()
@@ -491,6 +579,12 @@ def build_blocks(data, air_data=None):
                 {"type": "mrkdwn", "text": f":cloud: *구름량*\n{cloud_cover}%"},
                 {"type": "mrkdwn", "text": f":compression: *기압*\n{pressure} hPa"},
                 {"type": "mrkdwn", "text": f":droplet: *습도*\n{humidity}%"},
+            ],
+        },
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f":eye: 가시거리 {format_visibility(visibility)} · :sweat_drops: 이슬점 {dew_point}°C"},
             ],
         },
         {"type": "divider"},
@@ -569,6 +663,15 @@ def build_blocks(data, air_data=None):
         ),
 
         {"type": "divider"},
+
+        # ── 생활지수 ──
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*:bar_chart: 오늘의 생활지수*\n{lifestyle_bar(life_score)} *{life_score}점* ({lifestyle_label(life_score)})",
+            },
+        },
 
         # ── 옷차림 추천 ──
         {
@@ -713,6 +816,33 @@ def send_to_slack(blocks, fallback_text):
     )
 
 
+def send_error_to_slack(error_msg):
+    """실패 시 에러 메시지를 Slack으로 전송"""
+    try:
+        client = WebClient(token=SLACK_BOT_TOKEN)
+        client.chat_postMessage(
+            channel=SLACK_CHANNEL,
+            text=f":warning: 날씨 봇 오류: {error_msg}",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f":rotating_light: *{CITY_NAME} 날씨 봇 오류*\n```{error_msg}```",
+                    },
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {"type": "mrkdwn", "text": f":clock1: {datetime.now().strftime('%Y-%m-%d %H:%M')} | <https://github.com/concrete-sangminlee/weather-slack-bot/actions|GitHub Actions 확인>"},
+                    ],
+                },
+            ],
+        )
+    except Exception:
+        pass  # 에러 알림 자체가 실패하면 무시
+
+
 def main():
     try:
         data = fetch_weather()
@@ -725,10 +855,18 @@ def main():
         send_to_slack(blocks, fallback_text)
         print("날씨 메시지 전송 완료!")
     except requests.RequestException as e:
-        print(f"날씨 API 오류: {e}", file=sys.stderr)
+        error_msg = f"날씨 API 오류: {e}"
+        print(error_msg, file=sys.stderr)
+        send_error_to_slack(error_msg)
         sys.exit(1)
     except SlackApiError as e:
-        print(f"Slack 전송 오류: {e.response['error']}", file=sys.stderr)
+        error_msg = f"Slack 전송 오류: {e.response['error']}"
+        print(error_msg, file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        error_msg = f"예기치 않은 오류: {e}"
+        print(error_msg, file=sys.stderr)
+        send_error_to_slack(error_msg)
         sys.exit(1)
 
 
