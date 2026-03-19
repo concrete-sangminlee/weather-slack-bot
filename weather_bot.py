@@ -409,6 +409,115 @@ def build_weekly_trend(data):
     return "\n".join(lines)
 
 
+def get_tomorrow_alert(data):
+    """내일 날씨가 오늘과 크게 다를 때 알림 생성"""
+    daily = data["daily"]
+    today_idx = PAST_DAYS
+    tmr_idx = today_idx + 1
+    if tmr_idx >= len(daily["time"]):
+        return None
+
+    t_max = daily["temperature_2m_max"][today_idx]
+    t_min = daily["temperature_2m_min"][today_idx]
+    tmr_max = daily["temperature_2m_max"][tmr_idx]
+    tmr_min = daily["temperature_2m_min"][tmr_idx]
+    tmr_code = daily["weather_code"][tmr_idx]
+    tmr_prob = daily["precipitation_probability_max"][tmr_idx]
+    tmr_desc, tmr_cat = WMO_DESCRIPTIONS.get(tmr_code, ("알 수 없음", "Clear"))
+    today_code = daily["weather_code"][today_idx]
+    _, today_cat = WMO_DESCRIPTIONS.get(today_code, ("알 수 없음", "Clear"))
+
+    alerts = []
+
+    # 기온 급변
+    max_diff = tmr_max - t_max
+    min_diff = tmr_min - t_min
+    if max_diff >= 8:
+        alerts.append(f":chart_with_upwards_trend: 내일 최고기온 {tmr_max}°C로 *{max_diff:+.0f}°C* 급상승!")
+    elif max_diff <= -8:
+        alerts.append(f":chart_with_downwards_trend: 내일 최고기온 {tmr_max}°C로 *{max_diff:+.0f}°C* 급하락!")
+    elif abs(max_diff) >= 5:
+        sign = "상승" if max_diff > 0 else "하락"
+        alerts.append(f":thermometer: 내일 최고기온 {tmr_max}°C ({max_diff:+.0f}°C {sign})")
+
+    # 날씨 급변 (맑음 → 비/눈 또는 반대)
+    rain_cats = ("Rain", "Drizzle", "Thunderstorm", "Snow")
+    if today_cat not in rain_cats and tmr_cat in rain_cats:
+        emoji = WEATHER_EMOJIS.get(tmr_cat, ":cloud:")
+        alerts.append(f"{emoji} 내일 {tmr_desc} 예보! 우산 미리 챙기세요.")
+    elif today_cat in rain_cats and tmr_cat not in rain_cats:
+        alerts.append(f":sunny: 내일은 날이 개요! ({tmr_desc})")
+
+    # 강수 확률 급등
+    today_prob = daily["precipitation_probability_max"][today_idx]
+    if tmr_prob >= 60 and today_prob < 30:
+        alerts.append(f":umbrella: 내일 강수확률 {tmr_prob}%로 급등!")
+
+    return alerts if alerts else None
+
+
+def get_health_risks(temp, humidity, wind_ms, uv, pm25):
+    """건강 위험 지수 생성"""
+    risks = []
+
+    # 감기/독감 위험 (저온 + 건조)
+    if temp <= 5 and humidity <= 40:
+        risks.append(":sneezing_face: *감기 주의* — 저온 건조. 손 씻기, 수분 섭취 철저히!")
+    elif temp <= 10 and humidity <= 30:
+        risks.append(":face_with_thermometer: *감기 유의* — 건조한 날씨. 환기와 수분 섭취 신경 쓰세요.")
+
+    # 열사병/일사병 위험
+    if temp >= 33 and humidity >= 60:
+        risks.append(":face_with_head_bandage: *열사병 위험* — 고온다습! 야외 활동 자제, 시원한 곳에서 쉬세요.")
+    elif temp >= 30 and humidity >= 70:
+        risks.append(":hot_face: *일사병 유의* — 무더위. 그늘에서 자주 쉬세요.")
+
+    # 동상 위험
+    if temp <= -15 or (temp <= -10 and wind_ms >= 5):
+        risks.append(":cold_face: *동상 위험* — 노출 피부 10분 이내 동상 가능!")
+    elif temp <= -5 and wind_ms >= 8:
+        risks.append(":face_with_thermometer: *동상 유의* — 피부 노출을 최소화하세요.")
+
+    # 호흡기 (대기질)
+    if pm25 is not None and pm25 > 75:
+        risks.append(":lungs: *호흡기 주의* — 초미세먼지 매우 나쁨. 외출 시 KF94 마스크 필수!")
+    elif pm25 is not None and pm25 > 35:
+        risks.append(":mask: *호흡기 유의* — 미세먼지 나쁨. 호흡기 질환자 외출 자제.")
+
+    # 자외선 피부 손상
+    if uv is not None and uv >= 8:
+        risks.append(":warning: *피부 손상 주의* — 자외선 매우 강함. 10분 이상 노출 시 화상 위험!")
+
+    return risks
+
+
+def get_activity_suggestions(temp, feels_like, main_weather, wind_ms, precip_prob, uv):
+    """날씨에 맞는 활동 추천"""
+    rain_cats = ("Rain", "Drizzle", "Thunderstorm", "Snow")
+
+    if main_weather in rain_cats or (precip_prob and precip_prob >= 70):
+        return ":house: 실내 카페 · 영화 · 독서 · 쇼핑몰"
+
+    if temp <= 0:
+        return ":cup_with_straw: 따뜻한 카페 · 실내 운동 · 온천/찜질방"
+
+    if temp <= 10:
+        return ":hiking_boot: 가벼운 산책 · 미술관/박물관 · 실내 운동"
+
+    if temp >= 30:
+        return ":swimmer: 수영 · 워터파크 · 에어컨 있는 실내"
+
+    if 18 <= feels_like <= 25 and wind_ms < 5:
+        if uv and uv < 6:
+            return ":bicyclist: 자전거 · 공원 산책 · 피크닉 · 야외 카페"
+        return ":person_walking: 산책 · 하이킹 · 야외 카페 (선크림 필수)"
+
+    if 15 <= feels_like <= 27:
+        return ":person_walking: 산책 · 조깅 · 야외 카페"
+
+    return ":walking: 가벼운 외출 · 산책"
+
+
 def get_greeting():
     """시간대별 인사말"""
     hour = datetime.now().hour
@@ -664,6 +773,9 @@ def build_blocks(data, air_data=None):
 
     outfit = get_outfit_recommendation(temp, feels_like, main_weather, precip_prob)
     life_score = calc_lifestyle_index(temp, humidity, wind_speed, uv_max, aqi, precip_prob)
+    activity = get_activity_suggestions(temp, feels_like, main_weather, wind_speed, precip_prob, uv_max)
+    health_risks = get_health_risks(temp, humidity, wind_speed, uv_max, pm25)
+    tomorrow_alerts = get_tomorrow_alert(data)
 
     WEEKDAYS_KR = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
     now = datetime.now()
@@ -825,7 +937,7 @@ def build_blocks(data, air_data=None):
             if DISPLAY.get("show_best_time", True) else []
         ),
 
-        # ── 옷차림 추천 ──
+        # ── 옷차림 + 활동 추천 ──
         {
             "type": "section",
             "text": {
@@ -833,6 +945,18 @@ def build_blocks(data, air_data=None):
                 "text": f"*:womans_clothes: 오늘의 옷차림*\n{outfit}",
             },
         },
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f":sparkles: *추천 활동:* {activity}"},
+            ],
+        },
+
+        # ── 건강 위험 ──
+        *(_build_health_block(health_risks)),
+
+        # ── 내일 날씨 변화 알림 ──
+        *(_build_tomorrow_alert_block(tomorrow_alerts)),
 
         # ── 오늘의 팁 ──
         {
@@ -995,6 +1119,36 @@ def send_to_slack(blocks, fallback_text):
         text=fallback_text,
         blocks=blocks,
     )
+
+
+def _build_health_block(risks):
+    if not risks:
+        return []
+    return [
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*:hospital: 건강 주의보*\n" + "\n".join(f"• {r}" for r in risks),
+            },
+        },
+    ]
+
+
+def _build_tomorrow_alert_block(alerts):
+    if not alerts:
+        return []
+    return [
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*:crystal_ball: 내일 날씨 변화*\n" + "\n".join(f"• {a}" for a in alerts),
+            },
+        },
+    ]
 
 
 def send_error_to_slack(error_msg):
