@@ -251,7 +251,7 @@ def test_golden_hour():
         datetime.now().replace(hour=6, minute=30).isoformat(),
         datetime.now().replace(hour=18, minute=42).isoformat(),
     )
-    assert ":camera:" in result
+    assert "📷" in result
     assert "06:30" in result
     assert "18:42" in result
 

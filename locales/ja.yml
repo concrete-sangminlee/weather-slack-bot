@@ -1,13 +1,13 @@
 # Japanese
 greeting:
-  dawn: ":crescent_moon: 深夜"
-  morning: ":sunrise: おはようございます"
-  am: ":sun_with_face: 午前"
-  pm: ":sunny: 午後"
-  evening: ":city_sunset: こんばんは"
+  dawn: "🌙 深夜"
+  morning: "🌅 おはようございます"
+  am: "🌞 午前"
+  pm: "☀️ 午後"
+  evening: "🌇 こんばんは"
 
 header: "{city_name} {greeting}"
-summary_precip: " · :droplet:{precip_prob}%"
+summary_precip: " · 💧{precip_prob}%"
 
 sections:
   temperature: "気温"

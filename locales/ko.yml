@@ -1,13 +1,13 @@
 # Korean (default)
 greeting:
-  dawn: ":crescent_moon: 새벽"
-  morning: ":sunrise: 좋은 아침"
-  am: ":sun_with_face: 오전"
-  pm: ":sunny: 오후"
-  evening: ":city_sunset: 저녁"
+  dawn: "🌙 새벽"
+  morning: "🌅 좋은 아침"
+  am: "🌞 오전"
+  pm: "☀️ 오후"
+  evening: "🌇 저녁"
 
 header: "{city_name} {greeting}"
-summary_precip: " · :droplet:{precip_prob}%"
+summary_precip: " · 💧{precip_prob}%"
 
 sections:
   temperature: "기온"

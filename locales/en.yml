@@ -1,13 +1,13 @@
 # English
 greeting:
-  dawn: ":crescent_moon: Late Night"
-  morning: ":sunrise: Good Morning"
-  am: ":sun_with_face: Morning"
-  pm: ":sunny: Afternoon"
-  evening: ":city_sunset: Evening"
+  dawn: "🌙 Late Night"
+  morning: "🌅 Good Morning"
+  am: "🌞 Morning"
+  pm: "☀️ Afternoon"
+  evening: "🌇 Evening"
 
 header: "{city_name} {greeting}"
-summary_precip: " · :droplet:{precip_prob}%"
+summary_precip: " · 💧{precip_prob}%"
 
 sections:
   temperature: "Temperature"
