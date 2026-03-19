@@ -1,0 +1,24 @@
+# Seoul Weather Slack Bot Configuration
+# Customize your weather bot by editing this file.
+
+# City coordinates (find yours at maps.google.com → right-click → copy coordinates)
+city:
+  name: 서울
+  latitude: 37.5665
+  longitude: 126.9780
+
+# Schedule timezone (IANA format)
+timezone: Asia/Seoul
+
+# Forecast settings
+forecast:
+  hourly_hours: 6       # Number of hours to show in hourly forecast
+  daily_days: 3         # Number of days in daily forecast (max 7)
+  past_days: 1          # Days of history for comparison (0 to disable)
+
+# Display settings
+display:
+  show_air_quality: true
+  show_hourly: true
+  show_daily_forecast: true
+  show_yesterday_comparison: true

@@ -2,8 +2,10 @@ import os
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 import requests
+import yaml
 from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -13,11 +15,22 @@ RETRY_DELAY = 5
 
 load_dotenv()
 
+# ── 설정 로드 ──
+_CONFIG_PATH = Path(__file__).parent / "config.yml"
+with open(_CONFIG_PATH, encoding="utf-8") as f:
+    CONFIG = yaml.safe_load(f)
+
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "#weather")
 
-SEOUL_LAT = 37.5665
-SEOUL_LON = 126.9780
+CITY_NAME = CONFIG["city"]["name"]
+CITY_LAT = CONFIG["city"]["latitude"]
+CITY_LON = CONFIG["city"]["longitude"]
+TIMEZONE = CONFIG["timezone"]
+HOURLY_HOURS = CONFIG["forecast"]["hourly_hours"]
+DAILY_DAYS = CONFIG["forecast"]["daily_days"]
+PAST_DAYS = CONFIG["forecast"]["past_days"]
+DISPLAY = CONFIG["display"]
 
 # Open-Meteo WMO Weather Code 매핑
 WMO_DESCRIPTIONS = {
@@ -103,8 +116,8 @@ def _request_with_retry(url, params):
 def fetch_weather():
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
-        "latitude": SEOUL_LAT,
-        "longitude": SEOUL_LON,
+        "latitude": CITY_LAT,
+        "longitude": CITY_LON,
         "current": ",".join([
             "temperature_2m",
             "relative_humidity_2m",
@@ -148,8 +161,9 @@ def fetch_weather():
             "precipitation_probability",
             "wind_speed_10m",
         ]),
-        "timezone": "Asia/Seoul",
-        "forecast_days": 3,
+        "timezone": TIMEZONE,
+        "past_days": PAST_DAYS,
+        "forecast_days": DAILY_DAYS,
     }
     return _request_with_retry(url, params)
 
@@ -157,10 +171,10 @@ def fetch_weather():
 def fetch_air_quality():
     url = "https://air-quality-api.open-meteo.com/v1/air-quality"
     params = {
-        "latitude": SEOUL_LAT,
-        "longitude": SEOUL_LON,
+        "latitude": CITY_LAT,
+        "longitude": CITY_LON,
         "current": "pm10,pm2_5,us_aqi,carbon_monoxide,nitrogen_dioxide,ozone",
-        "timezone": "Asia/Seoul",
+        "timezone": TIMEZONE,
     }
     return _request_with_retry(url, params)
 
@@ -340,24 +354,37 @@ def build_blocks(data, air_data=None):
     wind_dir = wind_direction_to_text(cur["wind_direction_10m"])
     precip = cur["precipitation"]
 
-    temp_max = daily["temperature_2m_max"][0]
-    temp_min = daily["temperature_2m_min"][0]
-    feels_max = daily["apparent_temperature_max"][0]
-    feels_min = daily["apparent_temperature_min"][0]
-    precip_sum = daily["precipitation_sum"][0]
-    precip_hours = daily["precipitation_hours"][0]
-    precip_prob = daily["precipitation_probability_max"][0]
-    rain_sum = daily["rain_sum"][0]
-    snow_sum = daily["snowfall_sum"][0]
-    sunrise = format_time(daily["sunrise"][0])
-    sunset = format_time(daily["sunset"][0])
-    sunshine = format_duration(daily["sunshine_duration"][0])
-    daylight = format_duration(daily["daylight_duration"][0])
-    wind_max = kmh_to_ms(daily["wind_speed_10m_max"][0])
-    gust_max = kmh_to_ms(daily["wind_gusts_10m_max"][0])
-    wind_dir_dominant = wind_direction_to_text(daily["wind_direction_10m_dominant"][0])
-    uv_max = daily["uv_index_max"][0]
-    radiation = daily["shortwave_radiation_sum"][0]
+    # past_days=1이면 index 0=어제, 1=오늘; past_days=0이면 0=오늘
+    today_idx = PAST_DAYS
+    temp_max = daily["temperature_2m_max"][today_idx]
+    temp_min = daily["temperature_2m_min"][today_idx]
+    feels_max = daily["apparent_temperature_max"][today_idx]
+    feels_min = daily["apparent_temperature_min"][today_idx]
+    precip_sum = daily["precipitation_sum"][today_idx]
+    precip_hours = daily["precipitation_hours"][today_idx]
+    precip_prob = daily["precipitation_probability_max"][today_idx]
+    rain_sum = daily["rain_sum"][today_idx]
+    snow_sum = daily["snowfall_sum"][today_idx]
+    sunrise = format_time(daily["sunrise"][today_idx])
+    sunset = format_time(daily["sunset"][today_idx])
+    sunshine = format_duration(daily["sunshine_duration"][today_idx])
+    daylight = format_duration(daily["daylight_duration"][today_idx])
+    wind_max = kmh_to_ms(daily["wind_speed_10m_max"][today_idx])
+    gust_max = kmh_to_ms(daily["wind_gusts_10m_max"][today_idx])
+    wind_dir_dominant = wind_direction_to_text(daily["wind_direction_10m_dominant"][today_idx])
+    uv_max = daily["uv_index_max"][today_idx]
+    radiation = daily["shortwave_radiation_sum"][today_idx]
+
+    # 어제 대비 비교
+    yesterday_cmp = ""
+    if DISPLAY["show_yesterday_comparison"] and PAST_DAYS >= 1:
+        y_max = daily["temperature_2m_max"][0]
+        y_min = daily["temperature_2m_min"][0]
+        diff_max = temp_max - y_max
+        diff_min = temp_min - y_min
+        sign_max = "+" if diff_max > 0 else ""
+        sign_min = "+" if diff_min > 0 else ""
+        yesterday_cmp = f"어제 대비 최고 {sign_max}{diff_max:.1f}°C / 최저 {sign_min}{diff_min:.1f}°C"
 
     # 대기질 데이터 추출
     aqi = pm25 = pm10 = co = no2 = o3 = None
@@ -384,7 +411,7 @@ def build_blocks(data, air_data=None):
         # ── 헤더 ──
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": f"{description} | 서울 오늘의 날씨", "emoji": True},
+            "text": {"type": "plain_text", "text": f"{description} | {CITY_NAME} 오늘의 날씨", "emoji": True},
         },
         {
             "type": "context",
@@ -409,6 +436,12 @@ def build_blocks(data, air_data=None):
                 {"type": "mrkdwn", "text": f":arrow_down: *최저* {temp_min}°C\n체감 {feels_min}°C"},
             ],
         },
+        *(
+            [{
+                "type": "context",
+                "elements": [{"type": "mrkdwn", "text": f":chart_with_upwards_trend: {yesterday_cmp}"}],
+            }] if yesterday_cmp else []
+        ),
         {"type": "divider"},
 
         # ── 날씨 상태 ──
@@ -588,7 +621,8 @@ def _build_daily_forecast_blocks(data):
     WEEKDAYS_KR = ["월", "화", "수", "목", "금", "토", "일"]
 
     lines = []
-    for i in range(min(3, len(daily["time"]))):
+    start = PAST_DAYS  # 어제 데이터 건너뛰기
+    for i in range(start, min(start + DAILY_DAYS, len(daily["time"]))):
         dt = datetime.fromisoformat(daily["time"][i])
         day_name = WEEKDAYS_KR[dt.weekday()]
         code = daily["weather_code"][i]
@@ -614,7 +648,7 @@ def build_fallback_text(data):
     weather_code = cur["weather_code"]
     description, _ = WMO_DESCRIPTIONS.get(weather_code, ("알 수 없음", "Clear"))
     temp = cur["temperature_2m"]
-    return f"서울 오늘의 날씨: {description}, {temp}°C"
+    return f"{CITY_NAME} 오늘의 날씨: {description}, {temp}°C"
 
 
 def send_to_slack(blocks, fallback_text):
