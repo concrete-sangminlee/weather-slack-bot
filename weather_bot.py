@@ -776,6 +776,12 @@ def build_blocks(data, air_data=None):
     activity = get_activity_suggestions(temp, feels_like, main_weather, wind_speed, precip_prob, uv_max)
     health_risks = get_health_risks(temp, humidity, wind_speed, uv_max, pm25)
     tomorrow_alerts = get_tomorrow_alert(data)
+    weekly_trend = build_weekly_trend(data) if DISPLAY.get("show_weekly_trend", True) else ""
+
+    # 한줄 요약
+    summary = f"{emoji} {temp}°C (체감 {feels_like}°C) · {description} · 습도 {humidity}% · 바람 {wind_speed}m/s"
+    if precip_prob and precip_prob > 0:
+        summary += f" · :droplet:{precip_prob}%"
 
     WEEKDAYS_KR = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
     now = datetime.now()
@@ -792,6 +798,10 @@ def build_blocks(data, air_data=None):
             "elements": [
                 {"type": "mrkdwn", "text": f":calendar: {today}"},
             ],
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": summary},
         },
         {"type": "divider"},
 
@@ -917,9 +927,9 @@ def build_blocks(data, air_data=None):
                 {"type": "divider"},
                 {
                     "type": "section",
-                    "text": {"type": "mrkdwn", "text": f"*:chart_with_upwards_trend: 주간 기온 트렌드*\n{build_weekly_trend(data)}"},
+                    "text": {"type": "mrkdwn", "text": f"*:chart_with_upwards_trend: 주간 기온 트렌드*\n{weekly_trend}"},
                 },
-            ] if DISPLAY.get("show_weekly_trend", True) and build_weekly_trend(data) else []
+            ] if weekly_trend else []
         ),
 
         {"type": "divider"},

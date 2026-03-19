@@ -4,7 +4,7 @@ A Slack bot that delivers a comprehensive daily weather briefing every morning �
 
 No API keys needed. No servers to maintain. Just fork, set two secrets, and go.
 
-<img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python"> <img src="https://img.shields.io/badge/Slack-Bot-4A154B?logo=slack&logoColor=white" alt="Slack"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/weather.yml?label=Daily%20Weather&logo=githubactions&logoColor=white" alt="Workflow Status"> <img src="https://img.shields.io/badge/API-Open--Meteo-orange" alt="Open-Meteo"> <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+<img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python"> <img src="https://img.shields.io/badge/Slack-Bot-4A154B?logo=slack&logoColor=white" alt="Slack"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/weather.yml?label=Daily%20Weather&logo=githubactions&logoColor=white" alt="Workflow Status"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/test.yml?label=Tests&logo=pytest&logoColor=white" alt="Tests"> <img src="https://img.shields.io/badge/API-Open--Meteo-orange" alt="Open-Meteo"> <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 
 ---
 
@@ -88,17 +88,20 @@ Every message includes **20+ data points** across 5 categories:
 | **3-Day Outlook** | Daily summary — weather, high / low temp, precipitation probability |
 | **Yesterday** | Temperature change vs. yesterday (high / low delta) |
 
-### Lifestyle Index
+### Smart Insights
 
-A composite **0–100 score** combining temperature comfort, humidity, wind, UV, air quality, and precipitation probability — displayed as a visual progress bar.
-
-### Outfit Recommendation
-
-Suggests what to wear based on feels-like temperature (11 tiers from -10°C to 30°C+), plus rain gear / waterproof shoes when needed.
-
-### Error Notifications
-
-If the bot fails, it sends an error alert to the same Slack channel with the error details and a link to GitHub Actions.
+| Feature | Description |
+|---------|-------------|
+| **Quick Summary** | One-line overview at the top for a quick glance |
+| **Lifestyle Index** | 0–100 composite score with visual progress bar |
+| **Best Outdoor Time** | Optimal hour to go outside based on hourly analysis |
+| **Outfit Recommendation** | 11-tier clothing suggestion based on feels-like temp |
+| **Activity Suggestions** | Weather-appropriate activities (indoor/outdoor) |
+| **Health Risks** | Flu, heatstroke, frostbite, respiratory, UV burn warnings |
+| **Tomorrow Alert** | Advance warning when tomorrow's weather changes significantly |
+| **Weekly Trend** | 7-day temperature trend mini-chart with color bars |
+| **Time-aware Greeting** | Header changes based on time of day |
+| **Error Notifications** | Slack alert with error details when the bot fails |
 
 ### Smart Daily Tips
 
@@ -124,14 +127,15 @@ Over **30 context-aware tip presets** that adapt to weather conditions:
 | AQI unhealthy (>150) | 😷 Sensitive groups reduce outdoor time |
 | Perfect weather | 🌈 Perfect day for a walk! |
 
-### Formatting & Automation
+### Automation & Quality
 
 - **Slack Block Kit** — rich card layout with structured sections, not plain text
-- **Hourly forecast** — next 6 hours with temperature, precipitation, and wind
-- **3-day outlook** — daily weather summary at a glance
 - **Fully automated** — runs daily at 7:00 AM KST via GitHub Actions cron
 - **Manual trigger** — run anytime from the Actions tab with one click
 - **Zero infrastructure** — no server, no database, no API key, no cost
+- **CI/CD** — automated test suite (26 tests) runs on every push
+- **Retry logic** — up to 3 retries with backoff on API failures
+- **Graceful degradation** — air quality API failure doesn't block weather delivery
 
 ---
 
@@ -231,8 +235,11 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 ├── config.yml                  # All settings (city, display, forecast)
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Env var template (local dev)
+├── tests/
+│   └── test_weather_bot.py     # 26 unit & integration tests
 └── .github/workflows/
-    └── weather.yml             # GitHub Actions cron workflow
+    ├── weather.yml             # Daily weather cron job
+    └── test.yml                # CI test runner (push & PR)
 ```
 
 ---
