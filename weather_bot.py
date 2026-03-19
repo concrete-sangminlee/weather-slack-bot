@@ -30,6 +30,7 @@ TIMEZONE = CONFIG["timezone"]
 HOURLY_HOURS = CONFIG["forecast"]["hourly_hours"]
 DAILY_DAYS = CONFIG["forecast"]["daily_days"]
 PAST_DAYS = CONFIG["forecast"]["past_days"]
+TREND_DAYS = CONFIG["forecast"].get("trend_days", 7)
 DISPLAY = CONFIG["display"]
 
 # Open-Meteo WMO Weather Code 매핑
@@ -162,10 +163,13 @@ def fetch_weather():
             "weather_code",
             "precipitation_probability",
             "wind_speed_10m",
+            "relative_humidity_2m",
+            "uv_index",
+            "apparent_temperature",
         ]),
         "timezone": TIMEZONE,
         "past_days": PAST_DAYS,
-        "forecast_days": DAILY_DAYS,
+        "forecast_days": max(DAILY_DAYS, TREND_DAYS),
     }
     return _request_with_retry(url, params)
 
@@ -286,6 +290,137 @@ def lifestyle_label(score):
 def lifestyle_bar(score):
     filled = round(score / 10)
     return ":large_green_square:" * filled + ":white_large_square:" * (10 - filled)
+
+
+def find_best_outdoor_time(data):
+    """오늘 시간별 데이터에서 가장 외출하기 좋은 시간대 찾기"""
+    hourly = data["hourly"]
+    now = datetime.now()
+    best_hour = None
+    best_score = -1
+
+    for i, time_str in enumerate(hourly["time"]):
+        dt = datetime.fromisoformat(time_str)
+        if dt.date() != now.date() or dt.hour <= now.hour or dt.hour < 7 or dt.hour > 20:
+            continue
+
+        t = hourly["temperature_2m"][i]
+        code = hourly["weather_code"][i]
+        prob = hourly["precipitation_probability"][i] or 0
+        wind = kmh_to_ms(hourly["wind_speed_10m"][i])
+        hum = hourly["relative_humidity_2m"][i]
+        uv = hourly["uv_index"][i] or 0
+        _, cat = WMO_DESCRIPTIONS.get(code, ("", "Clear"))
+
+        # 비/눈/뇌우면 스킵
+        if cat in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
+            continue
+        if prob >= 60:
+            continue
+
+        score = 100
+
+        # 기온 쾌적도
+        if 18 <= t <= 24:
+            pass
+        elif 15 <= t <= 27:
+            score -= 10
+        elif 10 <= t <= 30:
+            score -= 25
+        else:
+            score -= 40
+
+        # 습도
+        if 40 <= hum <= 60:
+            pass
+        elif 30 <= hum <= 70:
+            score -= 5
+        else:
+            score -= 15
+
+        # 바람
+        score -= min(wind * 2, 20)
+
+        # 자외선 (너무 높으면 감점)
+        if uv >= 8:
+            score -= 15
+        elif uv >= 6:
+            score -= 5
+
+        # 강수 확률
+        score -= prob * 0.3
+
+        if score > best_score:
+            best_score = score
+            best_hour = dt.hour
+
+    if best_hour is None:
+        return None
+
+    feels = None
+    for i, time_str in enumerate(hourly["time"]):
+        dt = datetime.fromisoformat(time_str)
+        if dt.date() == now.date() and dt.hour == best_hour:
+            feels = hourly["apparent_temperature"][i]
+            break
+
+    return {"hour": best_hour, "score": round(best_score), "feels": feels}
+
+
+def build_weekly_trend(data):
+    """7일 기온 트렌드 미니 차트"""
+    daily = data["daily"]
+    WEEKDAYS_KR = ["월", "화", "수", "목", "금", "토", "일"]
+
+    start = PAST_DAYS
+    entries = []
+    for i in range(start, min(start + TREND_DAYS, len(daily["time"]))):
+        dt = datetime.fromisoformat(daily["time"][i])
+        t_max = daily["temperature_2m_max"][i]
+        t_min = daily["temperature_2m_min"][i]
+        entries.append((WEEKDAYS_KR[dt.weekday()], t_min, t_max))
+
+    if not entries:
+        return ""
+
+    # 전체 범위 계산
+    all_temps = [t for _, lo, hi in entries for t in (lo, hi)]
+    t_floor = min(all_temps)
+    t_ceil = max(all_temps)
+    t_range = t_ceil - t_floor if t_ceil != t_floor else 1
+
+    lines = []
+    for day, lo, hi in entries:
+        # 8칸 바로 표현
+        bar_len = 8
+        lo_pos = round((lo - t_floor) / t_range * bar_len)
+        hi_pos = round((hi - t_floor) / t_range * bar_len)
+        hi_pos = max(hi_pos, lo_pos + 1)  # 최소 1칸
+
+        bar = ""
+        for p in range(bar_len + 1):
+            if lo_pos <= p <= hi_pos:
+                bar += ":blue_square:" if p <= (lo_pos + hi_pos) // 2 else ":orange_square:"
+            else:
+                bar += "  "
+
+        lines.append(f"`{day}` {lo:+.0f}° {bar} {hi:+.0f}°")
+
+    return "\n".join(lines)
+
+
+def get_greeting():
+    """시간대별 인사말"""
+    hour = datetime.now().hour
+    if hour < 6:
+        return ":crescent_moon: 새벽"
+    if hour < 9:
+        return ":sunrise: 좋은 아침"
+    if hour < 12:
+        return ":sun_with_face: 오전"
+    if hour < 18:
+        return ":sunny: 오후"
+    return ":city_sunset: 저녁"
 
 
 def get_outfit_recommendation(temp, feels_like, main_weather, precip_prob):
@@ -538,7 +673,7 @@ def build_blocks(data, air_data=None):
         # ── 헤더 ──
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": f"{description} | {CITY_NAME} 오늘의 날씨", "emoji": True},
+            "text": {"type": "plain_text", "text": f"{description} | {CITY_NAME} {get_greeting()}", "emoji": True},
         },
         {
             "type": "context",
@@ -664,7 +799,20 @@ def build_blocks(data, air_data=None):
 
         {"type": "divider"},
 
-        # ── 생활지수 ──
+        # ── 주간 기온 트렌드 ──
+        *(
+            [
+                {"type": "divider"},
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": f"*:chart_with_upwards_trend: 주간 기온 트렌드*\n{build_weekly_trend(data)}"},
+                },
+            ] if DISPLAY.get("show_weekly_trend", True) and build_weekly_trend(data) else []
+        ),
+
+        {"type": "divider"},
+
+        # ── 생활지수 + 최적 외출 시간 ──
         {
             "type": "section",
             "text": {
@@ -672,6 +820,10 @@ def build_blocks(data, air_data=None):
                 "text": f"*:bar_chart: 오늘의 생활지수*\n{lifestyle_bar(life_score)} *{life_score}점* ({lifestyle_label(life_score)})",
             },
         },
+        *(
+            _build_best_time_block(data)
+            if DISPLAY.get("show_best_time", True) else []
+        ),
 
         # ── 옷차림 추천 ──
         {
@@ -795,6 +947,35 @@ def _build_daily_forecast_blocks(data):
         {
             "type": "section",
             "text": {"type": "mrkdwn", "text": "\n".join(lines)},
+        },
+    ]
+
+
+def _build_best_time_block(data):
+    result = find_best_outdoor_time(data)
+    if result is None:
+        return [
+            {
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": ":house: 오늘은 실내 활동을 추천합니다."},
+                ],
+            },
+        ]
+
+    hour = result["hour"]
+    feels = result["feels"]
+    period = "오전" if hour < 12 else "오후"
+    display_hour = hour if hour <= 12 else hour - 12
+    if display_hour == 0:
+        display_hour = 12
+
+    return [
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f":runner: *최적 외출 시간:* {period} {display_hour}시경 (체감 {feels}°C)"},
+            ],
         },
     ]
 

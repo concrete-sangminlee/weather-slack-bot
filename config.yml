@@ -15,6 +15,7 @@ forecast:
   hourly_hours: 6       # Number of hours to show in hourly forecast
   daily_days: 3         # Number of days in daily forecast (max 7)
   past_days: 1          # Days of history for comparison (0 to disable)
+  trend_days: 7         # Days for weekly temperature trend chart
 
 # Display settings
 display:
@@ -22,3 +23,5 @@ display:
   show_hourly: true
   show_daily_forecast: true
   show_yesterday_comparison: true
+  show_best_time: true
+  show_weekly_trend: true
