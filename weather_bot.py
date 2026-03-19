@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -958,36 +958,25 @@ def build_blocks(data, air_data=None):
     today = now.strftime("%Y년 %m월 %d일") + " " + WEEKDAYS_KR[now.weekday()]
 
     blocks = [
-        # ── 헤더 ──
+        # ── 헤더 + 요약 ──
         {
             "type": "header",
             "text": {"type": "plain_text", "text": f"{description} | {CITY_NAME} {get_greeting()}", "emoji": True},
         },
         {
             "type": "context",
-            "elements": [
-                {"type": "mrkdwn", "text": f":calendar: {today}"},
-            ],
-        },
-        {
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": summary},
+            "elements": [{"type": "mrkdwn", "text": f":calendar: {today} · {summary}"}],
         },
         {"type": "divider"},
 
-        # ── 기온 ──
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": f"{emoji} *현재 {temp}°C* (체감 {feels_like}°C)",
-            },
-        },
+        # ── 기온 + 날씨 ──
         {
             "type": "section",
             "fields": [
-                {"type": "mrkdwn", "text": f":arrow_up: *최고* {temp_max}°C\n체감 {feels_max}°C"},
-                {"type": "mrkdwn", "text": f":arrow_down: *최저* {temp_min}°C\n체감 {feels_min}°C"},
+                {"type": "mrkdwn", "text": f"{emoji} *현재* {temp}°C\n체감 {feels_like}°C"},
+                {"type": "mrkdwn", "text": f":arrow_up: *최고* {temp_max}°C\n:arrow_down: *최저* {temp_min}°C"},
+                {"type": "mrkdwn", "text": f":droplet: *습도* {humidity}%\n:compression: *기압* {pressure}hPa"},
+                {"type": "mrkdwn", "text": f":cloud: *구름* {cloud_cover}%\n:eye: *가시거리* {format_visibility(visibility).split(' (')[0]}"},
             ],
         },
         *(
@@ -998,76 +987,27 @@ def build_blocks(data, air_data=None):
         ),
         {"type": "divider"},
 
-        # ── 날씨 상태 ──
+        # ── 강수 + 바람 (컴팩트) ──
         {
             "type": "section",
             "fields": [
-                {"type": "mrkdwn", "text": f":partly_sunny: *날씨*\n{description}"},
-                {"type": "mrkdwn", "text": f":cloud: *구름량*\n{cloud_cover}%"},
-                {"type": "mrkdwn", "text": f":compression: *기압*\n{pressure} hPa"},
-                {"type": "mrkdwn", "text": f":droplet: *습도*\n{humidity}%"},
-            ],
-        },
-        {
-            "type": "context",
-            "elements": [
-                {"type": "mrkdwn", "text": f":eye: 가시거리 {format_visibility(visibility)} · :sweat_drops: 이슬점 {dew_point}°C"},
+                {"type": "mrkdwn", "text": f":umbrella_with_rain_drops: *강수* {precip_prob}%\n예상 {precip_sum}mm"},
+                {"type": "mrkdwn", "text": f":wind_blowing_face: *바람* {wind_speed}m/s ({wind_dir})\n돌풍 {wind_gust}m/s"},
             ],
         },
         {"type": "divider"},
 
-        # ── 강수 ──
+        # ── 일조 & UV (컴팩트) ──
         {
             "type": "section",
             "fields": [
-                {"type": "mrkdwn", "text": f":umbrella_with_rain_drops: *강수 확률*\n{precip_prob}%"},
-                {"type": "mrkdwn", "text": f":rain_cloud: *현재 강수량*\n{precip} mm"},
-                {"type": "mrkdwn", "text": f":sweat_drops: *예상 강수량*\n{precip_sum} mm"},
-                {"type": "mrkdwn", "text": f":clock3: *강수 시간*\n{precip_hours}시간"},
+                {"type": "mrkdwn", "text": f":sunrise: *일출* {sunrise} / :city_sunset: *일몰* {sunset}\n{daylight} ({sunshine} 일조)"},
+                {"type": "mrkdwn", "text": f":beach_with_umbrella: *UV* {uv_max} ({uv_index_level(uv_max)})\n:high_brightness: *일사량* {radiation} MJ/m²"},
             ],
         },
         {
             "type": "context",
-            "elements": [
-                {"type": "mrkdwn", "text": f"비 {rain_sum} mm / 눈 {snow_sum} cm"},
-            ],
-        },
-        {"type": "divider"},
-
-        # ── 바람 ──
-        {
-            "type": "section",
-            "fields": [
-                {"type": "mrkdwn", "text": f":wind_blowing_face: *풍속*\n{wind_speed} m/s"},
-                {"type": "mrkdwn", "text": f":tornado: *돌풍*\n{wind_gust} m/s"},
-                {"type": "mrkdwn", "text": f":compass: *풍향*\n{wind_dir}"},
-                {"type": "mrkdwn", "text": f":chart_with_upwards_trend: *최대 풍속*\n{wind_max} m/s ({wind_dir_dominant}풍)"},
-            ],
-        },
-        {"type": "divider"},
-
-        # ── 일조 & 자외선 ──
-        {
-            "type": "section",
-            "fields": [
-                {"type": "mrkdwn", "text": f":sunrise: *일출*\n{sunrise}"},
-                {"type": "mrkdwn", "text": f":city_sunset: *일몰*\n{sunset}"},
-                {"type": "mrkdwn", "text": f":sun_with_face: *낮 길이*\n{daylight}"},
-                {"type": "mrkdwn", "text": f":sunny: *일조 시간*\n{sunshine}"},
-            ],
-        },
-        {
-            "type": "section",
-            "fields": [
-                {"type": "mrkdwn", "text": f":beach_with_umbrella: *자외선 지수*\n{uv_max} ({uv_index_level(uv_max)})"},
-                {"type": "mrkdwn", "text": f":high_brightness: *일사량*\n{radiation} MJ/m²"},
-            ],
-        },
-        {
-            "type": "context",
-            "elements": [
-                {"type": "mrkdwn", "text": f"{daylight_bar} · {moon_phase}"},
-            ],
+            "elements": [{"type": "mrkdwn", "text": f"{daylight_bar} · {moon_phase}"}],
         },
         {"type": "divider"},
 

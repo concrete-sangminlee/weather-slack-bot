@@ -163,7 +163,7 @@ Click the **Fork** button at the top right.
 ### 2. Create a Slack App
 
 1. Go to [Slack API](https://api.slack.com/apps) → **Create New App** → From scratch
-2. **OAuth & Permissions** → add `chat:write` to Bot Token Scopes
+2. **OAuth & Permissions** → add `chat:write` and `files:write` (for chart uploads) to Bot Token Scopes
 3. **Install to Workspace** → copy the `xoxb-` Bot Token
 4. Invite the bot to your channel: `/invite @your-bot-name`
 
