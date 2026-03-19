@@ -1317,15 +1317,18 @@ def send_to_slack(blocks, fallback_text, chart_path=None):
         text=fallback_text,
         blocks=blocks,
     )
-    # 차트 이미지를 스레드에 업로드
+    # 차트 이미지를 스레드에 업로드 (files:write 권한 필요, 없으면 스킵)
     if chart_path:
-        client.files_upload_v2(
-            channel=SLACK_CHANNEL,
-            file=chart_path,
-            title=f"{CITY_NAME} {TREND_DAYS}일 기온 트렌드",
-            initial_comment=":chart_with_upwards_trend: 기온 트렌드 차트",
-            thread_ts=resp["ts"],
-        )
+        try:
+            client.files_upload_v2(
+                channel=SLACK_CHANNEL,
+                file=chart_path,
+                title=f"{CITY_NAME} {TREND_DAYS}-Day Trend",
+                initial_comment=":chart_with_upwards_trend: Temperature Trend",
+                thread_ts=resp["ts"],
+            )
+        except SlackApiError:
+            pass  # files:write 권한 없으면 차트 업로드 스킵
 
 
 def _build_health_block(risks):
