@@ -235,17 +235,29 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 ## 📁 Project Structure
 
 ```
-├── weather_bot.py              # Main bot — fetch, format, send
-├── config.yml                  # All settings (city, display, forecast)
+├── weather_bot.py              # Main bot — daily weather briefing
+├── weekly_summary.py           # Weekly summary — past 7 days + next 7 days
+├── config.yml                  # All settings (city, locale, display, forecast)
+├── locales/                    # i18n language packs
+│   ├── ko.yml                  # Korean (default)
+│   ├── en.yml                  # English
+│   └── ja.yml                  # Japanese
+├── pyproject.toml              # Python package metadata
 ├── requirements.txt            # Python dependencies
-├── .env.example                # Env var template (local dev)
 ├── Dockerfile                  # Container support
-├── Makefile                    # Dev shortcuts (run, test, docker)
+├── Makefile                    # Dev shortcuts
 ├── tests/
-│   └── test_weather_bot.py     # 34 unit & integration tests
-└── .github/workflows/
-    ├── weather.yml             # Daily weather cron job
-    └── test.yml                # CI test runner (push & PR)
+│   └── test_weather_bot.py     # 39 unit & integration tests
+├── docs/
+│   └── index.html              # GitHub Pages landing page
+└── .github/
+    ├── workflows/
+    │   ├── weather.yml         # Daily weather (7 AM KST)
+    │   ├── weekly.yml          # Weekly summary (Sun 9 PM KST)
+    │   ├── test.yml            # CI tests (push & PR)
+    │   └── pages.yml           # GitHub Pages deploy
+    ├── ISSUE_TEMPLATE/         # Bug report & feature request
+    └── dependabot.yml          # Auto dependency updates
 ```
 
 ### Docker

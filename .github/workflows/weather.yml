@@ -4,7 +4,16 @@ on:
   schedule:
     # 매일 아침 7시 KST (= UTC 22:00 전날)
     - cron: '0 22 * * *'
-  workflow_dispatch: # 수동 실행 가능
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Message type'
+        required: false
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - weekly
 
 jobs:
   send-weather:
@@ -20,8 +29,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Send weather to Slack
+      - name: Send daily weather
+        if: ${{ github.event.inputs.mode != 'weekly' }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         run: python weather_bot.py
+
+      - name: Send weekly summary
+        if: ${{ github.event.inputs.mode == 'weekly' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+        run: python weekly_summary.py

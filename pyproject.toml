@@ -1,0 +1,39 @@
+[project]
+name = "weather-slack-bot"
+version = "2.1.0"
+description = "Comprehensive daily weather briefing to Slack"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "sangmin lee", email = "concrete.sangminlee@gmail.com"},
+]
+keywords = ["weather", "slack", "bot", "automation", "open-meteo"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "slack-sdk>=3.27.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Homepage = "https://concrete-sangminlee.github.io/weather-slack-bot/"
+Repository = "https://github.com/concrete-sangminlee/weather-slack-bot"
+Issues = "https://github.com/concrete-sangminlee/weather-slack-bot/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
