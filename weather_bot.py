@@ -1,6 +1,8 @@
+import math
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -9,6 +11,8 @@ import yaml
 from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
+__version__ = "2.0.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -407,6 +411,72 @@ def build_weekly_trend(data):
         lines.append(f"`{day}` {lo:+.0f}° {bar} {hi:+.0f}°")
 
     return "\n".join(lines)
+
+
+def calc_daylight_progress(sunrise_str, sunset_str):
+    """현재 시각이 일출~일몰 중 어디인지 프로그레스 바로 표현"""
+    now = datetime.now()
+    sunrise = datetime.fromisoformat(sunrise_str)
+    sunset = datetime.fromisoformat(sunset_str)
+
+    if now < sunrise:
+        return ":new_moon: 일출 전", 0
+    if now > sunset:
+        return ":new_moon: 일몰 후", 100
+
+    total = (sunset - sunrise).total_seconds()
+    elapsed = (now - sunrise).total_seconds()
+    pct = int(elapsed / total * 100)
+
+    bar_len = 10
+    filled = round(pct / 100 * bar_len)
+    bar = ":sunny:" + ":yellow_square:" * filled + ":black_large_square:" * (bar_len - filled) + ":crescent_moon:"
+
+    remaining = sunset - now
+    hours = int(remaining.total_seconds() // 3600)
+    minutes = int((remaining.total_seconds() % 3600) // 60)
+
+    return f"{bar} 일몰까지 {hours}시간 {minutes}분", pct
+
+
+def get_moon_phase():
+    """현재 달의 위상 계산 (Conway's method)"""
+    now = datetime.now()
+    year = now.year
+    month = now.month
+    day = now.day
+
+    if month <= 2:
+        year -= 1
+        month += 12
+
+    a = year // 100
+    b = a // 4
+    c = 2 - a + b
+    e = int(365.25 * (year + 4716))
+    f = int(30.6001 * (month + 1))
+    jd = c + day + e + f - 1524.5
+
+    days_since_new = (jd - 2451549.5) % 29.53058867
+    phase_pct = days_since_new / 29.53058867
+
+    if phase_pct < 0.0339:
+        return ":new_moon: 삭(새달)"
+    if phase_pct < 0.216:
+        return ":waxing_crescent_moon: 초승달"
+    if phase_pct < 0.283:
+        return ":first_quarter_moon: 상현달"
+    if phase_pct < 0.466:
+        return ":waxing_gibbous_moon: 상현망간"
+    if phase_pct < 0.534:
+        return ":full_moon: 보름달"
+    if phase_pct < 0.716:
+        return ":waning_gibbous_moon: 하현망간"
+    if phase_pct < 0.783:
+        return ":last_quarter_moon: 하현달"
+    if phase_pct < 0.966:
+        return ":waning_crescent_moon: 그믐달"
+    return ":new_moon: 삭(새달)"
 
 
 def get_tomorrow_alert(data):
@@ -816,10 +886,14 @@ def build_blocks(data, air_data=None):
     precip_prob = daily["precipitation_probability_max"][today_idx]
     rain_sum = daily["rain_sum"][today_idx]
     snow_sum = daily["snowfall_sum"][today_idx]
-    sunrise = format_time(daily["sunrise"][today_idx])
-    sunset = format_time(daily["sunset"][today_idx])
+    sunrise_raw = daily["sunrise"][today_idx]
+    sunset_raw = daily["sunset"][today_idx]
+    sunrise = format_time(sunrise_raw)
+    sunset = format_time(sunset_raw)
     sunshine = format_duration(daily["sunshine_duration"][today_idx])
     daylight = format_duration(daily["daylight_duration"][today_idx])
+    daylight_bar, _ = calc_daylight_progress(sunrise_raw, sunset_raw)
+    moon_phase = get_moon_phase()
     wind_max = kmh_to_ms(daily["wind_speed_10m_max"][today_idx])
     gust_max = kmh_to_ms(daily["wind_gusts_10m_max"][today_idx])
     wind_dir_dominant = wind_direction_to_text(daily["wind_direction_10m_dominant"][today_idx])
@@ -983,6 +1057,12 @@ def build_blocks(data, air_data=None):
                 {"type": "mrkdwn", "text": f":high_brightness: *일사량*\n{radiation} MJ/m²"},
             ],
         },
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f"{daylight_bar} · {moon_phase}"},
+            ],
+        },
         {"type": "divider"},
 
         # ── 대기질 ──
@@ -1080,7 +1160,7 @@ def build_blocks(data, air_data=None):
         {
             "type": "context",
             "elements": [
-                {"type": "mrkdwn", "text": "Powered by Open-Meteo API | <https://github.com/concrete-sangminlee/weather-slack-bot|GitHub>"},
+                {"type": "mrkdwn", "text": f"v{__version__} · Powered by Open-Meteo API | <https://github.com/concrete-sangminlee/weather-slack-bot|GitHub>"},
             ],
         },
     ]
@@ -1289,11 +1369,17 @@ def send_error_to_slack(error_msg):
 
 def main():
     try:
-        data = fetch_weather()
-        try:
-            air_data = fetch_air_quality()
-        except requests.RequestException:
-            air_data = None
+        # API 병렬 호출
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            weather_future = executor.submit(fetch_weather)
+            air_future = executor.submit(fetch_air_quality)
+
+            data = weather_future.result()
+            try:
+                air_data = air_future.result()
+            except Exception:
+                air_data = None
+
         blocks = build_blocks(data, air_data)
         fallback_text = build_fallback_text(data)
         send_to_slack(blocks, fallback_text)
