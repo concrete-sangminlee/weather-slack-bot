@@ -74,7 +74,7 @@ Every message includes **20+ data points** across 5 categories:
 | Category | Data |
 |----------|------|
 | **Temperature** | Current, feels-like, daily high / low, feels-like high / low |
-| **Sky** | Weather condition, cloud cover (%), atmospheric pressure (hPa) |
+| **Sky** | Weather condition, cloud cover (%), pressure (hPa), visibility (km), dew point (°C) |
 | **Humidity & Precipitation** | Humidity (%), current / total rainfall, snowfall, rain probability, precipitation hours |
 | **Wind** | Speed (m/s), gusts, direction, daily max speed / gusts / dominant direction |
 | **Sun & UV** | Sunrise, sunset, daylight duration, sunshine hours, UV index, solar radiation (MJ/m²) |
@@ -88,9 +88,17 @@ Every message includes **20+ data points** across 5 categories:
 | **3-Day Outlook** | Daily summary — weather, high / low temp, precipitation probability |
 | **Yesterday** | Temperature change vs. yesterday (high / low delta) |
 
+### Lifestyle Index
+
+A composite **0–100 score** combining temperature comfort, humidity, wind, UV, air quality, and precipitation probability — displayed as a visual progress bar.
+
 ### Outfit Recommendation
 
 Suggests what to wear based on feels-like temperature (11 tiers from -10°C to 30°C+), plus rain gear / waterproof shoes when needed.
+
+### Error Notifications
+
+If the bot fails, it sends an error alert to the same Slack channel with the error details and a link to GitHub Actions.
 
 ### Smart Daily Tips
 
