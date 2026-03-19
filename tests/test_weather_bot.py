@@ -309,11 +309,25 @@ def test_fetch_air_quality():
 def test_build_blocks():
     data = wb.fetch_weather()
     air = wb.fetch_air_quality()
-    blocks = wb.build_blocks(data, air)
+    blocks, color = wb.build_blocks(data, air)
     assert isinstance(blocks, list)
     assert len(blocks) > 20
-    # 헤더가 있는지 확인
     assert blocks[0]["type"] == "header"
+    assert color.startswith("#")
+
+
+def test_weather_grade():
+    grade, color = wb.weather_grade(95)
+    assert grade == "A+"
+    assert color == "#2ecc71"
+    grade, color = wb.weather_grade(35)
+    assert grade == "D"
+
+
+def test_seasonal_note():
+    note = wb.get_seasonal_note()
+    # 어떤 날이든 None이거나 문자열
+    assert note is None or isinstance(note, str)
 
 
 def test_build_fallback_text():

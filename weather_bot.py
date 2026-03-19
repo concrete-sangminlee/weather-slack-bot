@@ -284,6 +284,25 @@ def calc_lifestyle_index(temp, humidity, wind_ms, uv, aqi, precip_prob):
     return max(0, min(100, score))
 
 
+def weather_grade(score):
+    """생활지수를 A~F 등급으로 변환"""
+    if score >= 90:
+        return "A+", "#2ecc71"  # green
+    if score >= 80:
+        return "A", "#27ae60"
+    if score >= 70:
+        return "B+", "#3498db"  # blue
+    if score >= 60:
+        return "B", "#2980b9"
+    if score >= 50:
+        return "C+", "#f1c40f"  # yellow
+    if score >= 40:
+        return "C", "#e67e22"  # orange
+    if score >= 30:
+        return "D", "#e74c3c"  # red
+    return "F", "#8e44ad"  # purple
+
+
 def lifestyle_label(score):
     if score >= 90:
         return "최고 ⭐"
@@ -1070,6 +1089,7 @@ def build_blocks(data, air_data=None):
     food_safety = calc_food_safety_index(temp, humidity)
     weekly_trend = build_weekly_trend(data) if DISPLAY.get("show_weekly_trend", True) else ""
     mood = get_weather_mood(main_weather, temp, life_score)
+    grade, grade_color = weather_grade(life_score)
     seasonal = get_seasonal_note()
 
     # 한줄 요약
@@ -1183,7 +1203,7 @@ def build_blocks(data, air_data=None):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*📊 {L['sections']['lifestyle_index']}*\n{lifestyle_bar(life_score)} *{life_score}* ({lifestyle_label(life_score)})",
+                "text": f"*📊 {L['sections']['lifestyle_index']}*  등급 *{grade}*\n{lifestyle_bar(life_score)} *{life_score}점* ({lifestyle_label(life_score)})",
             },
         },
         *(
@@ -1250,7 +1270,7 @@ def build_blocks(data, air_data=None):
         },
     ]
 
-    return blocks
+    return blocks, grade_color
 
 
 def _build_air_quality_blocks(aqi, pm25, pm10, co, no2, o3):
@@ -1394,14 +1414,20 @@ def _get_channels():
     return [SLACK_CHANNEL]
 
 
-def send_to_slack(blocks, fallback_text, chart_path=None):
+def send_to_slack(blocks, fallback_text, chart_path=None, color=None):
     client = WebClient(token=SLACK_BOT_TOKEN)
     for channel in _get_channels():
-        resp = client.chat_postMessage(
-            channel=channel,
-            text=fallback_text,
-            blocks=blocks,
-        )
+        kwargs = {
+            "channel": channel,
+            "text": fallback_text,
+        }
+        if color:
+            # 컬러 사이드바: blocks를 attachment로 감싸서 색상 표시
+            kwargs["attachments"] = [{"color": color, "blocks": blocks}]
+        else:
+            kwargs["blocks"] = blocks
+
+        resp = client.chat_postMessage(**kwargs)
         if chart_path:
             try:
                 client.files_upload_v2(
@@ -1523,6 +1549,7 @@ def send_error_to_slack(error_msg):
 
 
 def main():
+    start_time = time.time()
     try:
         # API 병렬 호출
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -1535,7 +1562,7 @@ def main():
             except Exception:
                 air_data = None
 
-        blocks = build_blocks(data, air_data)
+        blocks, color = build_blocks(data, air_data)
         fallback_text = build_fallback_text(data)
 
         # 차트 생성 (실패해도 메시지는 전송)
@@ -1546,7 +1573,7 @@ def main():
         except Exception:
             pass
 
-        send_to_slack(blocks, fallback_text, chart_path)
+        send_to_slack(blocks, fallback_text, chart_path, color)
 
         # 임시 차트 파일 정리
         if chart_path:
@@ -1555,7 +1582,8 @@ def main():
             except OSError:
                 pass
 
-        print("날씨 메시지 전송 완료!")
+        elapsed = round(time.time() - start_time, 2)
+        print(f"날씨 메시지 전송 완료! ({elapsed}s)")
     except requests.RequestException as e:
         error_msg = f"날씨 API 오류: {e}"
         print(error_msg, file=sys.stderr)
