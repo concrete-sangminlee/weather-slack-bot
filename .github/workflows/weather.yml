@@ -4,16 +4,6 @@ on:
   schedule:
     - cron: '0 22 * * *'
   workflow_dispatch:
-    inputs:
-      mode:
-        description: 'Message type'
-        required: false
-        default: 'daily'
-        type: choice
-        options:
-          - daily
-          - digest
-          - weekly
 
 jobs:
   send-weather:
@@ -34,4 +24,4 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-        run: python cli.py ${{ github.event.inputs.mode || 'daily' }}
+        run: python cli.py daily
