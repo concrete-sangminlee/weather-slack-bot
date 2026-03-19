@@ -2,7 +2,7 @@ name: Seoul Weather Bot
 
 on:
   schedule:
-    - cron: '0 22 * * *'  # 매일 7 AM KST
+    - cron: '0 22 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -35,42 +35,3 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
         run: python cli.py ${{ github.event.inputs.mode || 'daily' }}
-
-      - name: Job Summary
-        if: always()
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-        run: |
-          python -c "
-          from weather_bot import fetch_weather, WMO_DESCRIPTIONS, kmh_to_ms, calc_lifestyle_index, weather_grade, CITY_NAME, PAST_DAYS
-          data = fetch_weather()
-          cur = data['current']
-          daily = data['daily']
-          idx = PAST_DAYS
-          code = cur['weather_code']
-          desc, _ = WMO_DESCRIPTIONS.get(code, ('?','Clear'))
-          temp = cur['temperature_2m']
-          feels = cur['apparent_temperature']
-          hum = cur['relative_humidity_2m']
-          wind = kmh_to_ms(cur['wind_speed_10m'])
-          t_max = daily['temperature_2m_max'][idx]
-          t_min = daily['temperature_2m_min'][idx]
-          prob = daily['precipitation_probability_max'][idx]
-          score = calc_lifestyle_index(temp, hum, wind, None, None, prob)
-          grade, _ = weather_grade(score)
-          summary = f'''## {CITY_NAME} Weather
-          | Metric | Value |
-          |--------|-------|
-          | Weather | {desc} |
-          | Temperature | {temp}°C (feels {feels}°C) |
-          | High / Low | {t_max}°C / {t_min}°C |
-          | Humidity | {hum}% |
-          | Wind | {wind} m/s |
-          | Rain | {prob}% |
-          | Grade | **{grade}** ({score}/100) |
-          '''
-          import os
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
-              f.write(summary)
-          " 2>/dev/null || true
