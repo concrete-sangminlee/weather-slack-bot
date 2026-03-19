@@ -203,6 +203,43 @@ def pm_level(pm25):
     return "매우 나쁨"
 
 
+def get_outfit_recommendation(temp, feels_like, main_weather, precip_prob):
+    """체감 온도 기반 옷차림 추천"""
+    t = feels_like
+
+    if t <= -10:
+        outfit = ":scarf: 패딩·롱패딩, 목도리, 장갑, 귀마개, 기모 안감"
+    elif t <= -5:
+        outfit = ":coat: 두꺼운 패딩, 목도리, 장갑, 기모 바지"
+    elif t <= 0:
+        outfit = ":coat: 패딩·두꺼운 코트, 니트, 기모 바지"
+    elif t <= 5:
+        outfit = ":coat: 코트·가죽자켓, 니트, 히트텍"
+    elif t <= 10:
+        outfit = ":necktie: 자켓·트렌치코트, 니트·맨투맨"
+    elif t <= 15:
+        outfit = ":shirt: 가디건·얇은 자켓, 맨투맨, 긴 바지"
+    elif t <= 20:
+        outfit = ":tshirt: 얇은 긴팔·셔츠, 면바지"
+    elif t <= 25:
+        outfit = ":tshirt: 반팔·얇은 셔츠, 면바지·린넨"
+    elif t <= 30:
+        outfit = ":shorts: 반팔·민소매, 반바지·린넨 바지"
+    else:
+        outfit = ":shorts: 민소매·나시, 반바지, 통풍 잘 되는 옷"
+
+    extras = []
+    if main_weather in ("Rain", "Drizzle", "Thunderstorm") or (precip_prob and precip_prob >= 50):
+        extras.append(":umbrella: 우산")
+    if main_weather == "Snow":
+        extras.append(":boot: 방수 신발")
+
+    if extras:
+        outfit += " + " + " ".join(extras)
+
+    return outfit
+
+
 def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
                   humidity, uv, wind_ms, gust_ms, precip_prob,
                   precip_sum, cloud_cover, snow_sum, aqi=None, pm25=None):
@@ -403,6 +440,8 @@ def build_blocks(data, air_data=None):
         precip_sum, cloud_cover, snow_sum, aqi, pm25,
     )
 
+    outfit = get_outfit_recommendation(temp, feels_like, main_weather, precip_prob)
+
     WEEKDAYS_KR = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
     now = datetime.now()
     today = now.strftime("%Y년 %m월 %d일") + " " + WEEKDAYS_KR[now.weekday()]
@@ -506,25 +545,39 @@ def build_blocks(data, air_data=None):
         {"type": "divider"},
 
         # ── 대기질 ──
-        *_build_air_quality_blocks(aqi, pm25, pm10, co, no2, o3),
+        *(
+            _build_air_quality_blocks(aqi, pm25, pm10, co, no2, o3)
+            if DISPLAY["show_air_quality"] else []
+        ),
 
-        # ── 시간별 예보 (향후 6시간) ──
-        {"type": "divider"},
-        {
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": "*:clock1: 시간별 예보*"},
-        },
-        *_build_hourly_blocks(data),
+        # ── 시간별 예보 ──
+        *(
+            [
+                {"type": "divider"},
+                {"type": "section", "text": {"type": "mrkdwn", "text": "*:clock1: 시간별 예보*"}},
+                *_build_hourly_blocks(data),
+            ] if DISPLAY["show_hourly"] else []
+        ),
 
         # ── 3일 예보 ──
-        {"type": "divider"},
-        {
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": "*:calendar: 3일 예보*"},
-        },
-        *_build_daily_forecast_blocks(data),
+        *(
+            [
+                {"type": "divider"},
+                {"type": "section", "text": {"type": "mrkdwn", "text": f"*:calendar: {DAILY_DAYS}일 예보*"}},
+                *_build_daily_forecast_blocks(data),
+            ] if DISPLAY["show_daily_forecast"] else []
+        ),
 
         {"type": "divider"},
+
+        # ── 옷차림 추천 ──
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*:womans_clothes: 오늘의 옷차림*\n{outfit}",
+            },
+        },
 
         # ── 오늘의 팁 ──
         {

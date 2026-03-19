@@ -86,6 +86,11 @@ Every message includes **20+ data points** across 5 categories:
 |----------|---------|
 | **Hourly** | Next 6 hours — temperature, precipitation probability, wind speed |
 | **3-Day Outlook** | Daily summary — weather, high / low temp, precipitation probability |
+| **Yesterday** | Temperature change vs. yesterday (high / low delta) |
+
+### Outfit Recommendation
+
+Suggests what to wear based on feels-like temperature (11 tiers from -10°C to 30°C+), plus rain gear / waterproof shoes when needed.
 
 ### Smart Daily Tips
 
@@ -172,16 +177,27 @@ Test now: **Actions** → **Seoul Weather Bot** → **Run workflow**
 
 ## 🌍 Customization
 
-### Change City
+All settings are in `config.yml` — no code changes needed:
 
-Edit the coordinates in `weather_bot.py`:
+```yaml
+city:
+  name: 서울                    # City display name
+  latitude: 37.5665            # Find at maps.google.com → right-click → copy
+  longitude: 126.9780
 
-```python
-SEOUL_LAT = 37.5665  # ← Your city's latitude
-SEOUL_LON = 126.9780  # ← Your city's longitude
+timezone: Asia/Seoul
+
+forecast:
+  hourly_hours: 6              # Hours in hourly forecast
+  daily_days: 3                # Days in daily forecast (max 7)
+  past_days: 1                 # For yesterday comparison (0 to disable)
+
+display:
+  show_air_quality: true       # AQI, PM2.5, PM10, pollutants
+  show_hourly: true            # Hourly forecast section
+  show_daily_forecast: true    # Multi-day forecast section
+  show_yesterday_comparison: true  # Yesterday temp comparison
 ```
-
-> Tip: Search your city on [Google Maps](https://maps.google.com), right-click → copy coordinates.
 
 ### Change Schedule
 
@@ -196,7 +212,7 @@ schedule:
 
 ### Change Language
 
-The Slack messages are in Korean by default. Edit the strings in `weather_bot.py` (`WMO_DESCRIPTIONS`, `generate_tips`, `format_message`) to localize.
+The Slack messages are in Korean by default. Edit the strings in `weather_bot.py` (`WMO_DESCRIPTIONS`, `generate_tips`, `get_outfit_recommendation`) to localize.
 
 ---
 
@@ -204,6 +220,7 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 
 ```
 ├── weather_bot.py              # Main bot — fetch, format, send
+├── config.yml                  # All settings (city, display, forecast)
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Env var template (local dev)
 └── .github/workflows/
