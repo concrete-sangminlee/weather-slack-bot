@@ -1,10 +1,19 @@
-.PHONY: run test lint install docker-build docker-run
+.PHONY: run weekly alert chart test install docker-build docker-run
 
 install:
 	pip install -r requirements.txt
 
 run:
 	python weather_bot.py
+
+weekly:
+	python weekly_summary.py
+
+alert:
+	python alert.py
+
+chart:
+	python chart.py
 
 test:
 	pytest tests/ -v

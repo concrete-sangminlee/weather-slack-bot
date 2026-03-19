@@ -2,3 +2,4 @@ requests>=2.31.0
 slack-sdk>=3.27.0
 python-dotenv>=1.0.0
 pyyaml>=6.0
+matplotlib>=3.8.0

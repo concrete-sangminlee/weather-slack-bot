@@ -1310,13 +1310,22 @@ def build_fallback_text(data):
     return f"{CITY_NAME} 오늘의 날씨: {description}, {temp}°C"
 
 
-def send_to_slack(blocks, fallback_text):
+def send_to_slack(blocks, fallback_text, chart_path=None):
     client = WebClient(token=SLACK_BOT_TOKEN)
-    client.chat_postMessage(
+    resp = client.chat_postMessage(
         channel=SLACK_CHANNEL,
         text=fallback_text,
         blocks=blocks,
     )
+    # 차트 이미지를 스레드에 업로드
+    if chart_path:
+        client.files_upload_v2(
+            channel=SLACK_CHANNEL,
+            file=chart_path,
+            title=f"{CITY_NAME} {TREND_DAYS}일 기온 트렌드",
+            initial_comment=":chart_with_upwards_trend: 기온 트렌드 차트",
+            thread_ts=resp["ts"],
+        )
 
 
 def _build_health_block(risks):
@@ -1441,7 +1450,24 @@ def main():
 
         blocks = build_blocks(data, air_data)
         fallback_text = build_fallback_text(data)
-        send_to_slack(blocks, fallback_text)
+
+        # 차트 생성 (실패해도 메시지는 전송)
+        chart_path = None
+        try:
+            from chart import generate_chart
+            chart_path = generate_chart()
+        except Exception:
+            pass
+
+        send_to_slack(blocks, fallback_text, chart_path)
+
+        # 임시 차트 파일 정리
+        if chart_path:
+            try:
+                os.unlink(chart_path)
+            except OSError:
+                pass
+
         print("날씨 메시지 전송 완료!")
     except requests.RequestException as e:
         error_msg = f"날씨 API 오류: {e}"

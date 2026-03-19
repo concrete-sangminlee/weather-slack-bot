@@ -13,7 +13,7 @@ from weather_bot import (
     TIMEZONE, PAST_DAYS, TREND_DAYS,
 )
 
-WEEKDAYS_KR = ["월", "화", "수", "목", "금", "토", "일"]
+WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 def fetch_chart_data():
@@ -47,7 +47,7 @@ def generate_chart():
         highs.append(daily["temperature_2m_max"][i])
         lows.append(daily["temperature_2m_min"][i])
         precip_probs.append(daily["precipitation_probability_max"][i] or 0)
-        labels.append(f"{dt.month}/{dt.day}\n({WEEKDAYS_KR[dt.weekday()]})")
+        labels.append(f"{dt.month}/{dt.day}\n({WEEKDAYS[dt.weekday()]})")
 
     # 스타일 설정
     plt.style.use("dark_background")
@@ -75,7 +75,7 @@ def generate_chart():
     ax2 = ax1.twinx()
     bars = ax2.bar(x, precip_probs, alpha=0.25, color="#06b6d4", width=0.4, label="강수확률")
     ax2.set_ylim(0, 120)
-    ax2.set_ylabel("강수확률 (%)", color="#06b6d4", fontsize=11)
+    ax2.set_ylabel("Precip %", color="#06b6d4", fontsize=11)
     ax2.tick_params(axis="y", labelcolor="#06b6d4")
 
     # 강수확률 라벨 (40% 이상만)
@@ -87,10 +87,10 @@ def generate_chart():
     # 축 설정
     ax1.set_xticks(x)
     ax1.set_xticklabels(labels, fontsize=10)
-    ax1.set_ylabel("기온 (°C)", fontsize=11)
-    ax1.legend(loc="upper left", fontsize=10)
+    ax1.set_ylabel("Temp (°C)", fontsize=11)
+    ax1.legend(["High", "Low"], loc="upper left", fontsize=10)
     ax1.grid(axis="y", alpha=0.15)
-    ax1.set_title(f"{CITY_NAME} {TREND_DAYS}일 기온 트렌드", fontsize=16, fontweight="bold", pad=16)
+    ax1.set_title(f"{TREND_DAYS}-Day Temperature Trend", fontsize=16, fontweight="bold", pad=16)
 
     plt.tight_layout()
 

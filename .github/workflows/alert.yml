@@ -1,0 +1,27 @@
+name: Weather Alert Check
+
+on:
+  schedule:
+    # 3시간마다 체크 (KST 기준 0,3,6,9,12,15,18,21시)
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check for extreme weather
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+        run: python alert.py
