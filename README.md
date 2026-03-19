@@ -43,12 +43,25 @@ No API keys needed. No servers to maintain. Just fork, set two secrets, and go.
   자외선 지수: 5.9 (높음 😎)
   일사량: 21.01 MJ/m²
 
+🕐 시간별 예보
+  16시 ☀️ 8.3°C  💧0%  💨2.3m/s
+  17시 ☀️ 7.1°C  💧0%  💨2.6m/s
+  18시 ☀️ 5.8°C  💧0%  💨2.4m/s
+  ...
+
+📅 3일 예보
+  3/19(목) ☀️ 대체로 맑음  ⬇️-1.6°C ⬆️9.9°C  💧0%
+  3/20(금) ☀️ 맑음        ⬇️0.4°C  ⬆️12.2°C 💧0%
+  3/21(토) ☁️ 흐림        ⬇️-0.8°C ⬆️13.2°C 💧0%
+
 ━━━━━━━━━━━━━━━━━━━━
 💡 오늘의 팁
   • 🧤 약간 쌀쌀해요. 겉옷 하나 걸치세요.
   • 🌡️ 일교차가 12°C로 큽니다. 얇은 겉옷을 챙기세요.
   • 😎 자외선 보통. 장시간 야외 활동 시 선크림 추천.
 ```
+
+> Note: The actual Slack message uses [Block Kit](https://api.slack.com/block-kit) rich formatting with structured layouts, emoji icons, and clean section dividers.
 
 ---
 
@@ -65,6 +78,13 @@ Every message includes **20+ data points** across 5 categories:
 | **Humidity & Precipitation** | Humidity (%), current / total rainfall, snowfall, rain probability, precipitation hours |
 | **Wind** | Speed (m/s), gusts, direction, daily max speed / gusts / dominant direction |
 | **Sun & UV** | Sunrise, sunset, daylight duration, sunshine hours, UV index, solar radiation (MJ/m²) |
+
+### Hourly & Multi-Day Forecast
+
+| Forecast | Details |
+|----------|---------|
+| **Hourly** | Next 6 hours — temperature, precipitation probability, wind speed |
+| **3-Day Outlook** | Daily summary — weather, high / low temp, precipitation probability |
 
 ### Smart Daily Tips
 
@@ -87,8 +107,11 @@ Over **30 context-aware tip presets** that adapt to weather conditions:
 | Overcast (90%+) | ☁️ Grab a warm drink |
 | Perfect weather | 🌈 Perfect day for a walk! |
 
-### Automation
+### Formatting & Automation
 
+- **Slack Block Kit** — rich card layout with structured sections, not plain text
+- **Hourly forecast** — next 6 hours with temperature, precipitation, and wind
+- **3-day outlook** — daily weather summary at a glance
 - **Fully automated** — runs daily at 7:00 AM KST via GitHub Actions cron
 - **Manual trigger** — run anytime from the Actions tab with one click
 - **Zero infrastructure** — no server, no database, no API key, no cost
