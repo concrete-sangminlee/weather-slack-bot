@@ -1,10 +1,10 @@
 # ☀️ Seoul Weather Slack Bot
 
-A Slack bot that delivers a comprehensive daily weather briefing every morning — fully automated with GitHub Actions.
+A comprehensive daily weather briefing delivered to Slack every morning — with 30+ data points, smart insights, lifestyle indices, and personality. Fully automated with GitHub Actions.
 
-No API keys needed. No servers to maintain. Just fork, set two secrets, and go.
+No API keys. No servers. Just fork, set two secrets, and go.
 
-<img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python"> <img src="https://img.shields.io/badge/Slack-Bot-4A154B?logo=slack&logoColor=white" alt="Slack"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/weather.yml?label=Daily%20Weather&logo=githubactions&logoColor=white" alt="Workflow Status"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/test.yml?label=Tests&logo=pytest&logoColor=white" alt="Tests"> <img src="https://img.shields.io/badge/API-Open--Meteo-orange" alt="Open-Meteo"> <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+<img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python"> <img src="https://img.shields.io/badge/Slack-Bot-4A154B?logo=slack&logoColor=white" alt="Slack"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/weather.yml?label=Daily%20Weather&logo=githubactions&logoColor=white" alt="Workflow Status"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/test.yml?label=Tests%20%2844%29&logo=pytest&logoColor=white" alt="Tests"> <img src="https://img.shields.io/badge/ruff-passing-brightgreen?logo=ruff&logoColor=white" alt="Ruff"> <img src="https://img.shields.io/badge/API-Open--Meteo-orange" alt="Open-Meteo"> <img src="https://img.shields.io/badge/i18n-ko%20%7C%20en%20%7C%20ja-blue" alt="i18n"> <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"> <img src="https://img.shields.io/github/v/release/concrete-sangminlee/weather-slack-bot" alt="Release">
 
 ---
 
@@ -237,7 +237,10 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 ```
 ├── weather_bot.py              # Main bot — daily weather briefing
 ├── weekly_summary.py           # Weekly summary — past 7 days + next 7 days
+├── alert.py                    # Extreme weather alert checker
+├── chart.py                    # Temperature trend chart generator
 ├── config.yml                  # All settings (city, locale, display, forecast)
+├── CHANGELOG.md                # Version history
 ├── locales/                    # i18n language packs
 │   ├── ko.yml                  # Korean (default)
 │   ├── en.yml                  # English
@@ -247,14 +250,15 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 ├── Dockerfile                  # Container support
 ├── Makefile                    # Dev shortcuts
 ├── tests/
-│   └── test_weather_bot.py     # 39 unit & integration tests
+│   └── test_weather_bot.py     # 44 unit & integration tests
 ├── docs/
 │   └── index.html              # GitHub Pages landing page
 └── .github/
     ├── workflows/
     │   ├── weather.yml         # Daily weather (7 AM KST)
     │   ├── weekly.yml          # Weekly summary (Sun 9 PM KST)
-    │   ├── test.yml            # CI tests (push & PR)
+    │   ├── alert.yml           # Extreme weather alerts (every 3h)
+    │   ├── test.yml            # CI lint + tests (push & PR)
     │   └── pages.yml           # GitHub Pages deploy
     ├── ISSUE_TEMPLATE/         # Bug report & feature request
     └── dependabot.yml          # Auto dependency updates
