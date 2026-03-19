@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "2.5.0"
+__version__ = "3.0.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -90,16 +90,16 @@ WIND_DIRECTIONS = [
 ]
 
 
-def kmh_to_ms(kmh):
+def kmh_to_ms(kmh: float) -> float:
     return round(kmh / 3.6, 1)
 
 
-def wind_direction_to_text(degrees):
+def wind_direction_to_text(degrees: float) -> str:
     idx = round(degrees / 22.5) % 16
     return WIND_DIRECTIONS[idx]
 
 
-def uv_index_level(uv):
+def uv_index_level(uv: float) -> str:
     if uv <= 2:
         return "낮음 😊"
     if uv <= 5:
@@ -218,7 +218,7 @@ def pm_level(pm25):
     return "매우 나쁨"
 
 
-def format_visibility(meters):
+def format_visibility(meters: float) -> str:
     if meters >= 10000:
         return f"{meters / 1000:.0f} km (매우 좋음)"
     if meters >= 5000:
@@ -284,7 +284,7 @@ def calc_lifestyle_index(temp, humidity, wind_ms, uv, aqi, precip_prob):
     return max(0, min(100, score))
 
 
-def weather_grade(score):
+def weather_grade(score: int) -> tuple[str, str]:
     """생활지수를 A~F 등급으로 변환"""
     if score >= 90:
         return "A+", "#2ecc71"  # green
@@ -320,7 +320,7 @@ def lifestyle_bar(score):
     return "🟩" * filled + "⬜" * (10 - filled)
 
 
-def calc_wind_chill(temp, wind_ms):
+def calc_wind_chill(temp: float, wind_ms: float) -> float:
     """윈드칠 공식 (JAG/TI, 10°C 이하 + 풍속 1.3m/s 이상)"""
     wind_kmh = wind_ms * 3.6
     if temp > 10 or wind_kmh < 4.8:
@@ -329,7 +329,7 @@ def calc_wind_chill(temp, wind_ms):
     return round(wc, 1)
 
 
-def calc_heat_index(temp, humidity):
+def calc_heat_index(temp: float, humidity: float) -> float:
     """열지수 (Rothfusz, 27°C 이상 + 습도 40% 이상)"""
     if temp < 27 or humidity < 40:
         return temp
@@ -559,7 +559,7 @@ def calc_daylight_progress(sunrise_str, sunset_str):
     return f"{bar} 일몰까지 {hours}시간 {minutes}분", pct
 
 
-def get_moon_phase():
+def get_moon_phase() -> str:
     """현재 달의 위상 계산 (Conway's method)"""
     now = datetime.now()
     year = now.year
@@ -694,7 +694,7 @@ def get_health_risks(temp, humidity, wind_ms, uv, pm25):
     return risks
 
 
-def calc_discomfort_index(temp, humidity):
+def calc_discomfort_index(temp: float, humidity: float) -> float:
     """불쾌지수 (Thom's Discomfort Index)"""
     di = 0.81 * temp + 0.01 * humidity * (0.99 * temp - 14.3) + 46.3
     return round(di, 1)
@@ -921,7 +921,7 @@ def get_weather_mood(main_weather, temp, life_score):
     return moods[day_seed % len(moods)]
 
 
-def get_greeting():
+def get_greeting() -> str:
     """시간대별 인사말 (다국어)"""
     hour = datetime.now().hour
     g = L["greeting"]

@@ -1,39 +1,57 @@
 [project]
 name = "weather-slack-bot"
-version = "2.1.0"
-description = "Comprehensive daily weather briefing to Slack"
+version = "3.0.0"
+description = "Comprehensive daily weather briefing to Slack — 30+ data points, smart insights, lifestyle indices"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     {name = "sangmin lee", email = "concrete.sangminlee@gmail.com"},
 ]
-keywords = ["weather", "slack", "bot", "automation", "open-meteo"]
+keywords = ["weather", "slack", "bot", "automation", "open-meteo", "forecast", "air-quality"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Communications :: Chat",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
 dependencies = [
     "requests>=2.31.0",
     "slack-sdk>=3.27.0",
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
+    "matplotlib>=3.8.0",
 ]
+
+[project.scripts]
+weather-bot = "cli:main"
 
 [project.urls]
 Homepage = "https://concrete-sangminlee.github.io/weather-slack-bot/"
 Repository = "https://github.com/concrete-sangminlee/weather-slack-bot"
 Issues = "https://github.com/concrete-sangminlee/weather-slack-bot/issues"
+Changelog = "https://github.com/concrete-sangminlee/weather-slack-bot/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "pytest-cov>=4.0", "ruff>=0.3.0"]
 
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
