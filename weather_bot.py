@@ -46,13 +46,13 @@ WMO_DESCRIPTIONS = {
 }
 
 WEATHER_EMOJIS = {
-    "Clear": "☀️",
-    "Clouds": "☁️",
-    "Rain": "🌧️",
-    "Drizzle": "🌦️",
-    "Thunderstorm": "⛈️",
-    "Snow": "❄️",
-    "Fog": "🌫️",
+    "Clear": ":sunny:",
+    "Clouds": ":cloud:",
+    "Rain": ":rain_cloud:",
+    "Drizzle": ":partly_sunny_rain:",
+    "Thunderstorm": ":thunder_cloud_and_rain:",
+    "Snow": ":snowflake:",
+    "Fog": ":fog:",
 }
 
 WIND_DIRECTIONS = [
@@ -74,14 +74,14 @@ def wind_direction_to_text(degrees):
 
 def uv_index_level(uv):
     if uv <= 2:
-        return "낮음 😊"
+        return "낮음 :blush:"
     if uv <= 5:
-        return "보통 🙂"
+        return "보통 :slightly_smiling_face:"
     if uv <= 7:
-        return "높음 😎"
+        return "높음 :sunglasses:"
     if uv <= 10:
-        return "매우 높음 🥵"
-    return "위험 ☠️"
+        return "매우 높음 :hot_face:"
+    return "위험 :skull:"
 
 
 def fetch_weather():
@@ -141,110 +141,110 @@ def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
 
     # ── 강수 관련 ──
     if main_weather == "Thunderstorm":
-        tips.append("⛈️ 뇌우가 치고 있어요! 가급적 실내에 머무르세요.")
+        tips.append(":thunder_cloud_and_rain: 뇌우가 치고 있어요! 가급적 실내에 머무르세요.")
     elif main_weather in ("Rain", "Drizzle"):
         if precip_sum >= 30:
-            tips.append("🌊 폭우 예상! 저지대 침수에 주의하고, 외출을 자제하세요.")
+            tips.append(":ocean: 폭우 예상! 저지대 침수에 주의하고, 외출을 자제하세요.")
         elif precip_sum >= 10:
-            tips.append("☔ 비가 많이 옵니다. 우산과 방수 신발을 챙기세요.")
+            tips.append(":umbrella_with_rain_drops: 비가 많이 옵니다. 우산과 방수 신발을 챙기세요.")
         else:
-            tips.append("☂️ 우산 꼭 챙기세요!")
+            tips.append(":umbrella: 우산 꼭 챙기세요!")
     elif precip_prob is not None and precip_prob >= 70:
-        tips.append(f"🌂 비 올 확률 {precip_prob}%! 우산 꼭 챙기세요.")
+        tips.append(f":closed_umbrella: 비 올 확률 {precip_prob}%! 우산 꼭 챙기세요.")
     elif precip_prob is not None and precip_prob >= 40:
-        tips.append(f"🌂 비 올 확률 {precip_prob}%. 접이식 우산 하나 챙기면 좋겠어요.")
+        tips.append(f":closed_umbrella: 비 올 확률 {precip_prob}%. 접이식 우산 하나 챙기면 좋겠어요.")
 
     # ── 눈 관련 ──
     if main_weather == "Snow":
         if snow_sum >= 5:
-            tips.append("☃️ 폭설 주의! 대중교통 이용을 권장합니다.")
+            tips.append(":snowman: 폭설 주의! 대중교통 이용을 권장합니다.")
         else:
-            tips.append("❄️ 눈이 내려요! 빙판길 조심하세요.")
+            tips.append(":snowflake: 눈이 내려요! 빙판길 조심하세요.")
     elif temp <= 0 and precip_prob is not None and precip_prob >= 30:
-        tips.append("🧊 영하에 강수 확률이 있어요. 도로 결빙에 주의하세요.")
+        tips.append(":ice_cube: 영하에 강수 확률이 있어요. 도로 결빙에 주의하세요.")
 
     # ── 기온 관련 ──
     if temp <= -10:
-        tips.append("🥶 강추위! 동파 주의, 노출 피부를 최소화하세요.")
+        tips.append(":cold_face: 강추위! 동파 주의, 노출 피부를 최소화하세요.")
     elif temp <= -5:
-        tips.append("🥶 매서운 추위입니다. 내복과 두꺼운 외투 필수!")
+        tips.append(":cold_face: 매서운 추위입니다. 내복과 두꺼운 외투 필수!")
     elif temp <= 0:
-        tips.append("🧊 영하입니다. 목도리, 장갑 챙기세요.")
+        tips.append(":ice_cube: 영하입니다. 목도리, 장갑 챙기세요.")
     elif temp <= 5:
-        tips.append("🧥 쌀쌀합니다. 따뜻한 외투를 입으세요.")
+        tips.append(":coat: 쌀쌀합니다. 따뜻한 외투를 입으세요.")
     elif temp <= 10:
-        tips.append("🧤 약간 쌀쌀해요. 겉옷 하나 걸치세요.")
+        tips.append(":gloves: 약간 쌀쌀해요. 겉옷 하나 걸치세요.")
 
     if temp >= 35:
-        tips.append("🔥 극심한 폭염! 야외 활동을 피하고 수분을 충분히 섭취하세요.")
+        tips.append(":fire: 극심한 폭염! 야외 활동을 피하고 수분을 충분히 섭취하세요.")
     elif temp >= 33:
-        tips.append("🥵 폭염 주의! 시원한 물 자주 마시고 그늘에서 쉬세요.")
+        tips.append(":hot_face: 폭염 주의! 시원한 물 자주 마시고 그늘에서 쉬세요.")
     elif temp >= 30:
-        tips.append("☀️ 무더운 날씨입니다. 통풍 잘 되는 옷을 입으세요.")
+        tips.append(":sunny: 무더운 날씨입니다. 통풍 잘 되는 옷을 입으세요.")
     elif temp >= 28:
-        tips.append("😎 더운 날이에요. 시원하게 입으세요.")
+        tips.append(":sunglasses: 더운 날이에요. 시원하게 입으세요.")
 
     # ── 일교차 ──
     diff = temp_max - temp_min
     if diff >= 15:
-        tips.append(f"🌡️ 일교차 {diff:.0f}°C! 겹쳐 입기 필수. 감기 조심하세요.")
+        tips.append(f":thermometer: 일교차 {diff:.0f}°C! 겹쳐 입기 필수. 감기 조심하세요.")
     elif diff >= 10:
-        tips.append(f"🌡️ 일교차가 {diff:.0f}°C로 큽니다. 얇은 겉옷을 챙기세요.")
+        tips.append(f":thermometer: 일교차가 {diff:.0f}°C로 큽니다. 얇은 겉옷을 챙기세요.")
 
     # ── 습도 관련 ──
     if humidity >= 90 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
-        tips.append("💦 습도 매우 높음! 빨래는 실내 건조하세요.")
+        tips.append(":sweat_drops: 습도 매우 높음! 빨래는 실내 건조하세요.")
     elif humidity >= 80 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
-        tips.append("💧 습도가 높아요. 불쾌지수가 높을 수 있습니다.")
+        tips.append(":droplet: 습도가 높아요. 불쾌지수가 높을 수 있습니다.")
     elif humidity <= 20:
-        tips.append("🏜️ 공기가 매우 건조합니다. 보습제를 바르고 물을 자주 마시세요.")
+        tips.append(":desert: 공기가 매우 건조합니다. 보습제를 바르고 물을 자주 마시세요.")
     elif humidity <= 30:
-        tips.append("💨 건조한 날씨예요. 수분 섭취와 피부 보습에 신경 쓰세요.")
+        tips.append(":dash: 건조한 날씨예요. 수분 섭취와 피부 보습에 신경 쓰세요.")
 
     # ── 자외선 관련 ──
     if uv is not None:
         if uv >= 11:
-            tips.append("☠️ 자외선 극도로 위험! 한낮 외출 자제, 선크림 SPF50+ 필수.")
+            tips.append(":skull: 자외선 극도로 위험! 한낮 외출 자제, 선크림 SPF50+ 필수.")
         elif uv >= 8:
-            tips.append("🧴 자외선 매우 강함! 선크림·선글라스·모자 3종 세트 챙기세요.")
+            tips.append(":lotion_bottle: 자외선 매우 강함! 선크림·선글라스·모자 3종 세트 챙기세요.")
         elif uv >= 6:
-            tips.append("🧴 자외선 지수가 높아요. 선크림을 바르세요.")
+            tips.append(":lotion_bottle: 자외선 지수가 높아요. 선크림을 바르세요.")
         elif uv >= 3:
-            tips.append("😎 자외선 보통. 장시간 야외 활동 시 선크림 추천.")
+            tips.append(":sunglasses: 자외선 보통. 장시간 야외 활동 시 선크림 추천.")
 
     # ── 바람 관련 ──
     if wind_ms >= 14:
-        tips.append("🌪️ 강풍 경보급! 외출 자제, 간판·구조물 낙하 주의.")
+        tips.append(":tornado: 강풍 경보급! 외출 자제, 간판·구조물 낙하 주의.")
     elif wind_ms >= 11:
-        tips.append("🌬️ 강풍 주의! 우산이 뒤집힐 수 있어요. 외출 시 조심하세요.")
+        tips.append(":wind_blowing_face: 강풍 주의! 우산이 뒤집힐 수 있어요. 외출 시 조심하세요.")
     elif wind_ms >= 8:
-        tips.append("💨 바람이 꽤 셉니다. 체감 온도가 낮을 수 있어요.")
+        tips.append(":dash: 바람이 꽤 셉니다. 체감 온도가 낮을 수 있어요.")
     elif wind_ms >= 5:
-        tips.append("🍃 바람이 좀 불어요. 머리카락 날림 주의!")
+        tips.append(":leaves: 바람이 좀 불어요. 머리카락 날림 주의!")
 
     if gust_ms >= 20:
-        tips.append("⚠️ 돌풍 {:.1f} m/s 예상! 가벼운 물건이 날아갈 수 있어요.".format(gust_ms))
+        tips.append(f":warning: 돌풍 {gust_ms} m/s 예상! 가벼운 물건이 날아갈 수 있어요.")
 
     # ── 안개 ──
     if main_weather == "Fog":
-        tips.append("🌫️ 안개가 짙습니다. 운전 시 전조등 켜고 서행하세요.")
+        tips.append(":fog: 안개가 짙습니다. 운전 시 전조등 켜고 서행하세요.")
 
     # ── 흐림/구름 ──
     if cloud_cover >= 90 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow", "Fog"):
-        tips.append("☁️ 하늘이 잔뜩 흐려요. 기분 전환에 따뜻한 음료 한 잔 어때요?")
+        tips.append(":cloud: 하늘이 잔뜩 흐려요. 기분 전환에 따뜻한 음료 한 잔 어때요?")
 
     # ── 쾌적한 날씨 ──
     if not tips:
         if 18 <= temp <= 25 and 40 <= humidity <= 60 and wind_ms < 5:
-            tips.append("🌈 완벽한 날씨! 산책하기 딱 좋은 날이에요.")
+            tips.append(":rainbow: 완벽한 날씨! 산책하기 딱 좋은 날이에요.")
         elif 15 <= temp <= 27 and humidity < 70:
-            tips.append("🍃 쾌적한 날씨입니다. 좋은 하루 보내세요!")
+            tips.append(":leaves: 쾌적한 날씨입니다. 좋은 하루 보내세요!")
         elif 10 <= temp <= 15:
-            tips.append("🌸 봄바람이 느껴지는 날이에요. 가벼운 산책 어떠세요?")
+            tips.append(":cherry_blossom: 봄바람이 느껴지는 날이에요. 가벼운 산책 어떠세요?")
         else:
-            tips.append("🍃 좋은 하루 보내세요!")
+            tips.append(":leaves: 좋은 하루 보내세요!")
 
-    return "\n".join(f"  • {t}" for t in tips)
+    return tips
 
 
 def format_time(iso_str):
@@ -258,13 +258,13 @@ def format_duration(seconds):
     return f"{hours}시간 {minutes}분"
 
 
-def format_message(data):
+def build_blocks(data):
     cur = data["current"]
     daily = data["daily"]
 
     weather_code = cur["weather_code"]
     description, main_weather = WMO_DESCRIPTIONS.get(weather_code, ("알 수 없음", "Clear"))
-    emoji = WEATHER_EMOJIS.get(main_weather, "🌡️")
+    emoji = WEATHER_EMOJIS.get(main_weather, ":thermometer:")
 
     temp = cur["temperature_2m"]
     feels_like = cur["apparent_temperature"]
@@ -274,6 +274,7 @@ def format_message(data):
     wind_speed = kmh_to_ms(cur["wind_speed_10m"])
     wind_gust = kmh_to_ms(cur["wind_gusts_10m"])
     wind_dir = wind_direction_to_text(cur["wind_direction_10m"])
+    precip = cur["precipitation"]
 
     temp_max = daily["temperature_2m_max"][0]
     temp_min = daily["temperature_2m_min"][0]
@@ -293,7 +294,6 @@ def format_message(data):
     wind_dir_dominant = wind_direction_to_text(daily["wind_direction_10m_dominant"][0])
     uv_max = daily["uv_index_max"][0]
     radiation = daily["shortwave_radiation_sum"][0]
-    precip = cur["precipitation"]
 
     tips = generate_tips(
         main_weather, temp, feels_like, temp_max, temp_min,
@@ -301,56 +301,146 @@ def format_message(data):
         precip_sum, cloud_cover, snow_sum,
     )
 
-    message = (
-        f"{emoji} *서울 오늘의 날씨*\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"\n"
-        f"*🌡️ 기온*\n"
-        f"  현재: *{temp}°C* (체감 {feels_like}°C)\n"
-        f"  최고: {temp_max}°C (체감 {feels_max}°C)\n"
-        f"  최저: {temp_min}°C (체감 {feels_min}°C)\n"
-        f"\n"
-        f"*🌤️ 날씨*\n"
-        f"  상태: {description}\n"
-        f"  구름량: {cloud_cover}%\n"
-        f"  기압: {pressure} hPa\n"
-        f"\n"
-        f"*💧 습도 & 강수*\n"
-        f"  습도: {humidity}%\n"
-        f"  현재 강수량: {precip} mm\n"
-        f"  오늘 예상 강수량: {precip_sum} mm (비 {rain_sum} mm / 눈 {snow_sum} cm)\n"
-        f"  강수 확률: {precip_prob}%\n"
-        f"  강수 예상 시간: {precip_hours}시간\n"
-        f"\n"
-        f"*💨 바람*\n"
-        f"  풍속: {wind_speed} m/s (돌풍 {wind_gust} m/s)\n"
-        f"  풍향: {wind_dir}\n"
-        f"  오늘 최대 풍속: {wind_max} m/s (돌풍 {gust_max} m/s, {wind_dir_dominant}풍)\n"
-        f"\n"
-        f"*☀️ 일조 & 자외선*\n"
-        f"  일출: {sunrise} / 일몰: {sunset}\n"
-        f"  낮 길이: {daylight}\n"
-        f"  일조 시간: {sunshine}\n"
-        f"  자외선 지수: {uv_max} ({uv_index_level(uv_max)})\n"
-        f"  일사량: {radiation} MJ/m²\n"
-        f"\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"*💡 오늘의 팁*\n"
-        f"{tips}"
-    )
-    return message
+    WEEKDAYS_KR = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+    now = datetime.now()
+    today = now.strftime("%Y년 %m월 %d일") + " " + WEEKDAYS_KR[now.weekday()]
+
+    blocks = [
+        # ── 헤더 ──
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": f"{description} | 서울 오늘의 날씨", "emoji": True},
+        },
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f":calendar: {today}"},
+            ],
+        },
+        {"type": "divider"},
+
+        # ── 기온 ──
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"{emoji} *현재 {temp}°C* (체감 {feels_like}°C)",
+            },
+        },
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":arrow_up: *최고* {temp_max}°C\n체감 {feels_max}°C"},
+                {"type": "mrkdwn", "text": f":arrow_down: *최저* {temp_min}°C\n체감 {feels_min}°C"},
+            ],
+        },
+        {"type": "divider"},
+
+        # ── 날씨 상태 ──
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":partly_sunny: *날씨*\n{description}"},
+                {"type": "mrkdwn", "text": f":cloud: *구름량*\n{cloud_cover}%"},
+                {"type": "mrkdwn", "text": f":compression: *기압*\n{pressure} hPa"},
+                {"type": "mrkdwn", "text": f":droplet: *습도*\n{humidity}%"},
+            ],
+        },
+        {"type": "divider"},
+
+        # ── 강수 ──
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":umbrella_with_rain_drops: *강수 확률*\n{precip_prob}%"},
+                {"type": "mrkdwn", "text": f":rain_cloud: *현재 강수량*\n{precip} mm"},
+                {"type": "mrkdwn", "text": f":sweat_drops: *예상 강수량*\n{precip_sum} mm"},
+                {"type": "mrkdwn", "text": f":clock3: *강수 시간*\n{precip_hours}시간"},
+            ],
+        },
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f"비 {rain_sum} mm / 눈 {snow_sum} cm"},
+            ],
+        },
+        {"type": "divider"},
+
+        # ── 바람 ──
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":wind_blowing_face: *풍속*\n{wind_speed} m/s"},
+                {"type": "mrkdwn", "text": f":tornado: *돌풍*\n{wind_gust} m/s"},
+                {"type": "mrkdwn", "text": f":compass: *풍향*\n{wind_dir}"},
+                {"type": "mrkdwn", "text": f":chart_with_upwards_trend: *최대 풍속*\n{wind_max} m/s ({wind_dir_dominant}풍)"},
+            ],
+        },
+        {"type": "divider"},
+
+        # ── 일조 & 자외선 ──
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":sunrise: *일출*\n{sunrise}"},
+                {"type": "mrkdwn", "text": f":city_sunset: *일몰*\n{sunset}"},
+                {"type": "mrkdwn", "text": f":sun_with_face: *낮 길이*\n{daylight}"},
+                {"type": "mrkdwn", "text": f":sunny: *일조 시간*\n{sunshine}"},
+            ],
+        },
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":beach_with_umbrella: *자외선 지수*\n{uv_max} ({uv_index_level(uv_max)})"},
+                {"type": "mrkdwn", "text": f":high_brightness: *일사량*\n{radiation} MJ/m²"},
+            ],
+        },
+        {"type": "divider"},
+
+        # ── 오늘의 팁 ──
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*:bulb: 오늘의 팁*\n" + "\n".join(f"• {t}" for t in tips),
+            },
+        },
+
+        # ── 푸터 ──
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": "Powered by Open-Meteo API | <https://github.com/concrete-sangminlee/weather-slack-bot|GitHub>"},
+            ],
+        },
+    ]
+
+    return blocks
 
 
-def send_to_slack(message):
+def build_fallback_text(data):
+    cur = data["current"]
+    weather_code = cur["weather_code"]
+    description, _ = WMO_DESCRIPTIONS.get(weather_code, ("알 수 없음", "Clear"))
+    temp = cur["temperature_2m"]
+    return f"서울 오늘의 날씨: {description}, {temp}°C"
+
+
+def send_to_slack(blocks, fallback_text):
     client = WebClient(token=SLACK_BOT_TOKEN)
-    client.chat_postMessage(channel=SLACK_CHANNEL, text=message)
+    client.chat_postMessage(
+        channel=SLACK_CHANNEL,
+        text=fallback_text,
+        blocks=blocks,
+    )
 
 
 def main():
     try:
         data = fetch_weather()
-        message = format_message(data)
-        send_to_slack(message)
+        blocks = build_blocks(data)
+        fallback_text = build_fallback_text(data)
+        send_to_slack(blocks, fallback_text)
         print("날씨 메시지 전송 완료!")
     except requests.RequestException as e:
         print(f"날씨 API 오류: {e}", file=sys.stderr)
