@@ -126,8 +126,14 @@ def fetch_weather():
             "uv_index_max",
             "shortwave_radiation_sum",
         ]),
+        "hourly": ",".join([
+            "temperature_2m",
+            "weather_code",
+            "precipitation_probability",
+            "wind_speed_10m",
+        ]),
         "timezone": "Asia/Seoul",
-        "forecast_days": 1,
+        "forecast_days": 3,
     }
     resp = requests.get(url, params=params, timeout=10)
     resp.raise_for_status()
@@ -397,6 +403,24 @@ def build_blocks(data):
         },
         {"type": "divider"},
 
+        # ── 시간별 예보 (향후 6시간) ──
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "*:clock1: 시간별 예보*"},
+        },
+        *_build_hourly_blocks(data),
+
+        # ── 3일 예보 ──
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "*:calendar: 3일 예보*"},
+        },
+        *_build_daily_forecast_blocks(data),
+
+        {"type": "divider"},
+
         # ── 오늘의 팁 ──
         {
             "type": "section",
@@ -416,6 +440,77 @@ def build_blocks(data):
     ]
 
     return blocks
+
+
+def _build_hourly_blocks(data):
+    hourly = data["hourly"]
+    now = datetime.now()
+    current_hour = now.hour
+
+    lines = []
+    count = 0
+    for i, time_str in enumerate(hourly["time"]):
+        dt = datetime.fromisoformat(time_str)
+        if dt.date() == now.date() and dt.hour > current_hour and count < 6:
+            code = hourly["weather_code"][i]
+            desc, cat = WMO_DESCRIPTIONS.get(code, ("알 수 없음", "Clear"))
+            emoji = WEATHER_EMOJIS.get(cat, ":thermometer:")
+            t = hourly["temperature_2m"][i]
+            prob = hourly["precipitation_probability"][i]
+            wind = kmh_to_ms(hourly["wind_speed_10m"][i])
+            lines.append(f"`{dt.hour:02d}시` {emoji} *{t}°C*  :droplet:{prob}%  :dash:{wind}m/s")
+            count += 1
+
+    # 오늘 남은 시간이 부족하면 내일 아침부터 채우기
+    if count < 6:
+        for i, time_str in enumerate(hourly["time"]):
+            dt = datetime.fromisoformat(time_str)
+            if dt.date() > now.date() and count < 6:
+                code = hourly["weather_code"][i]
+                desc, cat = WMO_DESCRIPTIONS.get(code, ("알 수 없음", "Clear"))
+                emoji = WEATHER_EMOJIS.get(cat, ":thermometer:")
+                t = hourly["temperature_2m"][i]
+                prob = hourly["precipitation_probability"][i]
+                wind = kmh_to_ms(hourly["wind_speed_10m"][i])
+                day_label = "내일" if (dt.date() - now.date()).days == 1 else "모레"
+                lines.append(f"`{day_label} {dt.hour:02d}시` {emoji} *{t}°C*  :droplet:{prob}%  :dash:{wind}m/s")
+                count += 1
+
+    if not lines:
+        lines.append("시간별 데이터 없음")
+
+    return [
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "\n".join(lines)},
+        },
+    ]
+
+
+def _build_daily_forecast_blocks(data):
+    daily = data["daily"]
+    WEEKDAYS_KR = ["월", "화", "수", "목", "금", "토", "일"]
+
+    lines = []
+    for i in range(min(3, len(daily["time"]))):
+        dt = datetime.fromisoformat(daily["time"][i])
+        day_name = WEEKDAYS_KR[dt.weekday()]
+        code = daily["weather_code"][i]
+        desc, cat = WMO_DESCRIPTIONS.get(code, ("알 수 없음", "Clear"))
+        emoji = WEATHER_EMOJIS.get(cat, ":thermometer:")
+        t_max = daily["temperature_2m_max"][i]
+        t_min = daily["temperature_2m_min"][i]
+        prob = daily["precipitation_probability_max"][i]
+
+        date_str = f"{dt.month}/{dt.day}({day_name})"
+        lines.append(f"`{date_str}` {emoji} {desc}  :arrow_down:*{t_min}°C* :arrow_up:*{t_max}°C*  :droplet:{prob}%")
+
+    return [
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "\n".join(lines)},
+        },
+    ]
 
 
 def build_fallback_text(data):
