@@ -63,6 +63,10 @@ WIND_DIRECTIONS = [
 ]
 
 
+def kmh_to_ms(kmh):
+    return round(kmh / 3.6, 1)
+
+
 def wind_direction_to_text(degrees):
     idx = round(degrees / 22.5) % 16
     return WIND_DIRECTIONS[idx]
@@ -130,34 +134,116 @@ def fetch_weather():
     return resp.json()
 
 
-def generate_tips(main_weather, temp, humidity, uv, wind_speed, precip_prob):
+def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
+                  humidity, uv, wind_ms, gust_ms, precip_prob,
+                  precip_sum, cloud_cover, snow_sum):
     tips = []
-    if main_weather in ("Rain", "Drizzle", "Thunderstorm"):
-        tips.append("☂️ 우산 꼭 챙기세요!")
-    elif precip_prob and precip_prob >= 50:
-        tips.append(f"🌂 비 올 확률 {precip_prob}%! 우산 챙기세요.")
+
+    # ── 강수 관련 ──
+    if main_weather == "Thunderstorm":
+        tips.append("⛈️ 뇌우가 치고 있어요! 가급적 실내에 머무르세요.")
+    elif main_weather in ("Rain", "Drizzle"):
+        if precip_sum >= 30:
+            tips.append("🌊 폭우 예상! 저지대 침수에 주의하고, 외출을 자제하세요.")
+        elif precip_sum >= 10:
+            tips.append("☔ 비가 많이 옵니다. 우산과 방수 신발을 챙기세요.")
+        else:
+            tips.append("☂️ 우산 꼭 챙기세요!")
+    elif precip_prob is not None and precip_prob >= 70:
+        tips.append(f"🌂 비 올 확률 {precip_prob}%! 우산 꼭 챙기세요.")
+    elif precip_prob is not None and precip_prob >= 40:
+        tips.append(f"🌂 비 올 확률 {precip_prob}%. 접이식 우산 하나 챙기면 좋겠어요.")
+
+    # ── 눈 관련 ──
     if main_weather == "Snow":
-        tips.append("🧤 빙판길 조심하세요!")
-    if temp <= 0:
-        tips.append("🥶 영하입니다! 따뜻하게 입으세요.")
+        if snow_sum >= 5:
+            tips.append("☃️ 폭설 주의! 대중교통 이용을 권장합니다.")
+        else:
+            tips.append("❄️ 눈이 내려요! 빙판길 조심하세요.")
+    elif temp <= 0 and precip_prob is not None and precip_prob >= 30:
+        tips.append("🧊 영하에 강수 확률이 있어요. 도로 결빙에 주의하세요.")
+
+    # ── 기온 관련 ──
+    if temp <= -10:
+        tips.append("🥶 강추위! 동파 주의, 노출 피부를 최소화하세요.")
+    elif temp <= -5:
+        tips.append("🥶 매서운 추위입니다. 내복과 두꺼운 외투 필수!")
+    elif temp <= 0:
+        tips.append("🧊 영하입니다. 목도리, 장갑 챙기세요.")
     elif temp <= 5:
-        tips.append("🧥 많이 춥습니다. 외투 필수!")
+        tips.append("🧥 쌀쌀합니다. 따뜻한 외투를 입으세요.")
+    elif temp <= 10:
+        tips.append("🧤 약간 쌀쌀해요. 겉옷 하나 걸치세요.")
+
+    if temp >= 35:
+        tips.append("🔥 극심한 폭염! 야외 활동을 피하고 수분을 충분히 섭취하세요.")
     elif temp >= 33:
-        tips.append("🥵 폭염 주의! 수분 섭취 잊지 마세요.")
+        tips.append("🥵 폭염 주의! 시원한 물 자주 마시고 그늘에서 쉬세요.")
+    elif temp >= 30:
+        tips.append("☀️ 무더운 날씨입니다. 통풍 잘 되는 옷을 입으세요.")
     elif temp >= 28:
-        tips.append("😎 더운 날씨입니다. 시원하게 입으세요.")
-    if humidity >= 80 and main_weather not in ("Rain", "Drizzle", "Thunderstorm"):
-        tips.append("💧 습도가 높아요. 불쾌지수 높을 수 있습니다.")
-    if uv and uv >= 8:
-        tips.append("🧴 자외선이 매우 강합니다! 선크림 필수!")
-    elif uv and uv >= 6:
-        tips.append("🧴 자외선 지수가 높아요. 선크림을 바르세요.")
-    if wind_speed >= 40:
-        tips.append("🌪️ 강풍 주의! 외출 시 조심하세요.")
-    elif wind_speed >= 25:
-        tips.append("💨 바람이 강합니다. 체감 온도가 낮을 수 있어요.")
+        tips.append("😎 더운 날이에요. 시원하게 입으세요.")
+
+    # ── 일교차 ──
+    diff = temp_max - temp_min
+    if diff >= 15:
+        tips.append(f"🌡️ 일교차 {diff:.0f}°C! 겹쳐 입기 필수. 감기 조심하세요.")
+    elif diff >= 10:
+        tips.append(f"🌡️ 일교차가 {diff:.0f}°C로 큽니다. 얇은 겉옷을 챙기세요.")
+
+    # ── 습도 관련 ──
+    if humidity >= 90 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
+        tips.append("💦 습도 매우 높음! 빨래는 실내 건조하세요.")
+    elif humidity >= 80 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
+        tips.append("💧 습도가 높아요. 불쾌지수가 높을 수 있습니다.")
+    elif humidity <= 20:
+        tips.append("🏜️ 공기가 매우 건조합니다. 보습제를 바르고 물을 자주 마시세요.")
+    elif humidity <= 30:
+        tips.append("💨 건조한 날씨예요. 수분 섭취와 피부 보습에 신경 쓰세요.")
+
+    # ── 자외선 관련 ──
+    if uv is not None:
+        if uv >= 11:
+            tips.append("☠️ 자외선 극도로 위험! 한낮 외출 자제, 선크림 SPF50+ 필수.")
+        elif uv >= 8:
+            tips.append("🧴 자외선 매우 강함! 선크림·선글라스·모자 3종 세트 챙기세요.")
+        elif uv >= 6:
+            tips.append("🧴 자외선 지수가 높아요. 선크림을 바르세요.")
+        elif uv >= 3:
+            tips.append("😎 자외선 보통. 장시간 야외 활동 시 선크림 추천.")
+
+    # ── 바람 관련 ──
+    if wind_ms >= 14:
+        tips.append("🌪️ 강풍 경보급! 외출 자제, 간판·구조물 낙하 주의.")
+    elif wind_ms >= 11:
+        tips.append("🌬️ 강풍 주의! 우산이 뒤집힐 수 있어요. 외출 시 조심하세요.")
+    elif wind_ms >= 8:
+        tips.append("💨 바람이 꽤 셉니다. 체감 온도가 낮을 수 있어요.")
+    elif wind_ms >= 5:
+        tips.append("🍃 바람이 좀 불어요. 머리카락 날림 주의!")
+
+    if gust_ms >= 20:
+        tips.append("⚠️ 돌풍 {:.1f} m/s 예상! 가벼운 물건이 날아갈 수 있어요.".format(gust_ms))
+
+    # ── 안개 ──
+    if main_weather == "Fog":
+        tips.append("🌫️ 안개가 짙습니다. 운전 시 전조등 켜고 서행하세요.")
+
+    # ── 흐림/구름 ──
+    if cloud_cover >= 90 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow", "Fog"):
+        tips.append("☁️ 하늘이 잔뜩 흐려요. 기분 전환에 따뜻한 음료 한 잔 어때요?")
+
+    # ── 쾌적한 날씨 ──
     if not tips:
-        tips.append("🍃 좋은 하루 보내세요!")
+        if 18 <= temp <= 25 and 40 <= humidity <= 60 and wind_ms < 5:
+            tips.append("🌈 완벽한 날씨! 산책하기 딱 좋은 날이에요.")
+        elif 15 <= temp <= 27 and humidity < 70:
+            tips.append("🍃 쾌적한 날씨입니다. 좋은 하루 보내세요!")
+        elif 10 <= temp <= 15:
+            tips.append("🌸 봄바람이 느껴지는 날이에요. 가벼운 산책 어떠세요?")
+        else:
+            tips.append("🍃 좋은 하루 보내세요!")
+
     return "\n".join(f"  • {t}" for t in tips)
 
 
@@ -185,12 +271,9 @@ def format_message(data):
     humidity = cur["relative_humidity_2m"]
     cloud_cover = cur["cloud_cover"]
     pressure = cur["pressure_msl"]
-    wind_speed = cur["wind_speed_10m"]
-    wind_gust = cur["wind_gusts_10m"]
+    wind_speed = kmh_to_ms(cur["wind_speed_10m"])
+    wind_gust = kmh_to_ms(cur["wind_gusts_10m"])
     wind_dir = wind_direction_to_text(cur["wind_direction_10m"])
-    precip = cur["precipitation"]
-    rain = cur["rain"]
-    snow = cur["snowfall"]
 
     temp_max = daily["temperature_2m_max"][0]
     temp_min = daily["temperature_2m_min"][0]
@@ -205,13 +288,18 @@ def format_message(data):
     sunset = format_time(daily["sunset"][0])
     sunshine = format_duration(daily["sunshine_duration"][0])
     daylight = format_duration(daily["daylight_duration"][0])
-    wind_max = daily["wind_speed_10m_max"][0]
-    gust_max = daily["wind_gusts_10m_max"][0]
+    wind_max = kmh_to_ms(daily["wind_speed_10m_max"][0])
+    gust_max = kmh_to_ms(daily["wind_gusts_10m_max"][0])
     wind_dir_dominant = wind_direction_to_text(daily["wind_direction_10m_dominant"][0])
     uv_max = daily["uv_index_max"][0]
     radiation = daily["shortwave_radiation_sum"][0]
+    precip = cur["precipitation"]
 
-    tips = generate_tips(main_weather, temp, humidity, uv_max, wind_speed, precip_prob)
+    tips = generate_tips(
+        main_weather, temp, feels_like, temp_max, temp_min,
+        humidity, uv_max, wind_speed, gust_max, precip_prob,
+        precip_sum, cloud_cover, snow_sum,
+    )
 
     message = (
         f"{emoji} *서울 오늘의 날씨*\n"
@@ -235,9 +323,9 @@ def format_message(data):
         f"  강수 예상 시간: {precip_hours}시간\n"
         f"\n"
         f"*💨 바람*\n"
-        f"  풍속: {wind_speed} km/h (돌풍 {wind_gust} km/h)\n"
+        f"  풍속: {wind_speed} m/s (돌풍 {wind_gust} m/s)\n"
         f"  풍향: {wind_dir}\n"
-        f"  오늘 최대 풍속: {wind_max} km/h (돌풍 {gust_max} km/h, {wind_dir_dominant}풍)\n"
+        f"  오늘 최대 풍속: {wind_max} m/s (돌풍 {gust_max} m/s, {wind_dir_dominant}풍)\n"
         f"\n"
         f"*☀️ 일조 & 자외선*\n"
         f"  일출: {sunrise} / 일몰: {sunset}\n"
