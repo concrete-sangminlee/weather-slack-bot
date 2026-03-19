@@ -3,17 +3,18 @@ import os
 import sys
 from datetime import datetime
 
-import requests
-import yaml
 from dotenv import load_dotenv
 from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
-from pathlib import Path
 
 from weather_bot import (
-    _request_with_retry, kmh_to_ms, WMO_DESCRIPTIONS, WEATHER_EMOJIS,
-    CITY_LAT, CITY_LON, CITY_NAME, TIMEZONE, CONFIG, DISPLAY,
-    __version__, L,
+    CITY_LAT,
+    CITY_LON,
+    CITY_NAME,
+    TIMEZONE,
+    WEATHER_EMOJIS,
+    WMO_DESCRIPTIONS,
+    __version__,
+    _request_with_retry,
 )
 
 load_dotenv()

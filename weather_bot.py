@@ -509,9 +509,7 @@ def get_tomorrow_alert(data):
         return None
 
     t_max = daily["temperature_2m_max"][today_idx]
-    t_min = daily["temperature_2m_min"][today_idx]
     tmr_max = daily["temperature_2m_max"][tmr_idx]
-    tmr_min = daily["temperature_2m_min"][tmr_idx]
     tmr_code = daily["weather_code"][tmr_idx]
     tmr_prob = daily["precipitation_probability_max"][tmr_idx]
     tmr_desc, tmr_cat = WMO_DESCRIPTIONS.get(tmr_code, ("알 수 없음", "Clear"))
@@ -522,7 +520,6 @@ def get_tomorrow_alert(data):
 
     # 기온 급변
     max_diff = tmr_max - t_max
-    min_diff = tmr_min - t_min
     if max_diff >= 8:
         alerts.append(f"📈 내일 최고기온 {tmr_max}°C로 *{max_diff:+.0f}°C* 급상승!")
     elif max_diff <= -8:
@@ -690,6 +687,67 @@ def get_activity_suggestions(temp, feels_like, main_weather, wind_ms, precip_pro
         return "🚶 산책 · 조깅 · 야외 카페"
 
     return "🚶 가벼운 외출 · 산책"
+
+
+def get_seasonal_note():
+    """한국 계절/절기 기반 메시지"""
+    now = datetime.now()
+    month = now.month
+    day = now.day
+
+    # 절기/계절 이벤트
+    seasonal = {
+        (1, 1): "🎍 새해 첫날! 올해도 건강하세요.",
+        (2, 4): "🌱 입춘이에요. 봄이 시작됩니다!",
+        (3, 1): "🇰🇷 삼일절. 역사를 기억하는 하루.",
+        (3, 14): "🍫 화이트데이! 달콤한 하루 보내세요.",
+        (5, 5): "👶 어린이날! 동심으로 돌아가는 하루.",
+        (5, 8): "🤱 어버이날. 부모님께 감사를 전하세요.",
+        (6, 6): "🇰🇷 현충일. 호국영령을 기립니다.",
+        (8, 15): "🇰🇷 광복절. 독립의 기쁨을 기억합니다.",
+        (9, 1): "📚 새 학기 시작! 힘찬 출발 응원합니다.",
+        (10, 3): "🇰🇷 개천절. 하늘이 열린 날.",
+        (10, 9): "🇰🇷 한글날. 세종대왕님 감사합니다.",
+        (12, 25): "🎄 메리 크리스마스!",
+        (12, 31): "🎊 한 해의 마지막 날! 수고 많으셨어요.",
+    }
+
+    # 정확한 날짜 매칭
+    key = (month, day)
+    if key in seasonal:
+        return seasonal[key]
+
+    # 계절별 기간 메시지
+    if month == 3 and 20 <= day <= 31:
+        return "🌸 벚꽃 개화 시즌이에요! 꽃놀이 계획 세워보세요."
+    if month == 4 and 1 <= day <= 15:
+        return "🌸 벚꽃이 만개하는 시기예요. 봄나들이 어떠세요?"
+    if month == 4 and 15 < day <= 30:
+        return "🌿 신록의 계절, 초록빛이 짙어지고 있어요."
+    if month == 5 and 1 <= day <= 20:
+        return "🌹 장미가 피기 시작하는 계절이에요."
+    if month in (6, 7) and 15 <= day <= 31 and month == 6 or month == 7 and day <= 20:
+        return "🌧️ 장마철이에요. 우산과 제습에 신경 쓰세요."
+    if month == 7 and 20 < day <= 31:
+        return "🏖️ 본격 여름 휴가철! 더위 조심하세요."
+    if month == 8 and 1 <= day <= 20:
+        return "🌻 한여름이에요. 수분 섭취와 자외선 차단 필수!"
+    if month == 9 and 15 <= day <= 30:
+        return "🍂 가을이 성큼 다가왔어요. 단풍 준비 되셨나요?"
+    if month == 10 and 10 <= day <= 31:
+        return "🍁 단풍이 물드는 시기예요. 산행 추천!"
+    if month == 11 and 1 <= day <= 15:
+        return "🍂 늦가을, 첫서리가 내릴 수 있어요."
+    if month == 11 and 15 < day <= 30:
+        return "🧣 초겨울 한파에 대비하세요."
+    if month == 12 and 1 <= day <= 24:
+        return "⛄ 겨울이에요. 따뜻한 옷차림 필수!"
+    if month in (1, 2):
+        return "❄️ 한겨울이에요. 건강 관리에 유의하세요."
+    if month == 3 and day < 20:
+        return "🌱 봄이 오고 있어요. 조금만 더 기다려주세요!"
+
+    return None
 
 
 def get_weather_mood(main_weather, temp, life_score):
@@ -949,20 +1007,13 @@ def build_blocks(data, air_data=None):
     wind_speed = kmh_to_ms(cur["wind_speed_10m"])
     wind_gust = kmh_to_ms(cur["wind_gusts_10m"])
     wind_dir = wind_direction_to_text(cur["wind_direction_10m"])
-    precip = cur["precipitation"]
     visibility = cur.get("visibility", 0)
-    dew_point = cur.get("dew_point_2m")
 
-    # past_days=1이면 index 0=어제, 1=오늘; past_days=0이면 0=오늘
     today_idx = PAST_DAYS
     temp_max = daily["temperature_2m_max"][today_idx]
     temp_min = daily["temperature_2m_min"][today_idx]
-    feels_max = daily["apparent_temperature_max"][today_idx]
-    feels_min = daily["apparent_temperature_min"][today_idx]
     precip_sum = daily["precipitation_sum"][today_idx]
-    precip_hours = daily["precipitation_hours"][today_idx]
     precip_prob = daily["precipitation_probability_max"][today_idx]
-    rain_sum = daily["rain_sum"][today_idx]
     snow_sum = daily["snowfall_sum"][today_idx]
     sunrise_raw = daily["sunrise"][today_idx]
     sunset_raw = daily["sunset"][today_idx]
@@ -973,9 +1024,7 @@ def build_blocks(data, air_data=None):
     daylight_bar, _ = calc_daylight_progress(sunrise_raw, sunset_raw)
     moon_phase = get_moon_phase()
     golden_hour = calc_golden_hour(sunrise_raw, sunset_raw) if DISPLAY.get("show_golden_hour", True) else ""
-    wind_max = kmh_to_ms(daily["wind_speed_10m_max"][today_idx])
     gust_max = kmh_to_ms(daily["wind_gusts_10m_max"][today_idx])
-    wind_dir_dominant = wind_direction_to_text(daily["wind_direction_10m_dominant"][today_idx])
     uv_max = daily["uv_index_max"][today_idx]
     radiation = daily["shortwave_radiation_sum"][today_idx]
 
@@ -1021,6 +1070,7 @@ def build_blocks(data, air_data=None):
     food_safety = calc_food_safety_index(temp, humidity)
     weekly_trend = build_weekly_trend(data) if DISPLAY.get("show_weekly_trend", True) else ""
     mood = get_weather_mood(main_weather, temp, life_score)
+    seasonal = get_seasonal_note()
 
     # 한줄 요약
     summary = f"{emoji} {temp}°C (체감 {feels_like}°C) · {description} · 습도 {humidity}% · 바람 {wind_speed}m/s"
@@ -1182,6 +1232,14 @@ def build_blocks(data, air_data=None):
 
         # ── 도시 비교 ──
         *_build_city_comparison_blocks(CONFIG.get("compare_cities", [])),
+
+        # ── 계절 노트 ──
+        *(
+            [{
+                "type": "context",
+                "elements": [{"type": "mrkdwn", "text": seasonal}],
+            }] if seasonal else []
+        ),
 
         # ── 푸터 ──
         {

@@ -3,16 +3,18 @@ import os
 import sys
 from datetime import datetime
 
-import requests
 from dotenv import load_dotenv
 from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 
 from weather_bot import (
-    _request_with_retry, fetch_weather, fetch_air_quality, _get_channels,
-    kmh_to_ms, WMO_DESCRIPTIONS, WEATHER_EMOJIS,
-    CITY_LAT, CITY_LON, CITY_NAME, TIMEZONE, CONFIG,
+    CITY_NAME,
+    CONFIG,
+    WMO_DESCRIPTIONS,
     __version__,
+    _get_channels,
+    fetch_air_quality,
+    fetch_weather,
+    kmh_to_ms,
 )
 
 load_dotenv()

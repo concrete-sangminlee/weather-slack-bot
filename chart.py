@@ -1,16 +1,19 @@
 """7일 기온 트렌드 차트 이미지 생성"""
-import io
 import tempfile
 from datetime import datetime
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 from weather_bot import (
-    _request_with_retry, CITY_LAT, CITY_LON, CITY_NAME,
-    TIMEZONE, PAST_DAYS, TREND_DAYS,
+    CITY_LAT,
+    CITY_LON,
+    PAST_DAYS,
+    TIMEZONE,
+    TREND_DAYS,
+    _request_with_retry,
 )
 
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -65,15 +68,15 @@ def generate_chart():
     ax1.plot(x, lows, "o-", color="#3b82f6", linewidth=2.5, markersize=8, label="최저", zorder=5)
 
     # 기온 값 라벨
-    for i, (h, l) in enumerate(zip(highs, lows)):
-        ax1.annotate(f"{h:.0f}°", (i, h), textcoords="offset points",
+    for i, (hi, lo) in enumerate(zip(highs, lows)):
+        ax1.annotate(f"{hi:.0f}°", (i, hi), textcoords="offset points",
                      xytext=(0, 12), ha="center", fontsize=11, fontweight="bold", color="#f97316")
-        ax1.annotate(f"{l:.0f}°", (i, l), textcoords="offset points",
+        ax1.annotate(f"{lo:.0f}°", (i, lo), textcoords="offset points",
                      xytext=(0, -16), ha="center", fontsize=11, fontweight="bold", color="#3b82f6")
 
     # 강수확률 바 (보조 축)
     ax2 = ax1.twinx()
-    bars = ax2.bar(x, precip_probs, alpha=0.25, color="#06b6d4", width=0.4, label="강수확률")
+    ax2.bar(x, precip_probs, alpha=0.25, color="#06b6d4", width=0.4, label="강수확률")
     ax2.set_ylim(0, 120)
     ax2.set_ylabel("Precip %", color="#06b6d4", fontsize=11)
     ax2.tick_params(axis="y", labelcolor="#06b6d4")

@@ -10,7 +10,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import weather_bot as wb
 
-
 # ── 유틸리티 함수 ──
 
 def test_kmh_to_ms():
