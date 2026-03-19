@@ -2,11 +2,13 @@
 import os
 import sys
 
-# 테스트 시 환경 변수 설정
 os.environ.setdefault("SLACK_BOT_TOKEN", "test")
 os.environ.setdefault("SLACK_CHANNEL", "test")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+
+from conftest import requires_api
 
 import weather_bot as wb
 
@@ -198,6 +200,7 @@ def test_get_greeting():
 
 # ── 멀티시티 ──
 
+@requires_api
 def test_fetch_city_weather():
     city = {"name": "부산", "latitude": 35.1796, "longitude": 129.0756}
     data = wb.fetch_city_weather(city)
@@ -210,6 +213,7 @@ def test_city_comparison_empty():
     assert blocks == []
 
 
+@requires_api
 def test_city_comparison_with_cities():
     cities = [{"name": "부산", "latitude": 35.1796, "longitude": 129.0756}]
     blocks = wb._build_city_comparison_blocks(cities)
@@ -265,6 +269,7 @@ def test_get_channels_default():
 
 # ── alert.py ──
 
+@requires_api
 def test_alert_check():
     import alert
     alerts = alert.check_alerts()
@@ -273,6 +278,7 @@ def test_alert_check():
 
 # ── weekly_summary.py ──
 
+@requires_api
 def test_weekly_summary():
     import weekly_summary as ws
     blocks = ws.build_weekly_summary()
@@ -282,6 +288,7 @@ def test_weekly_summary():
 
 # ── chart.py ──
 
+@requires_api
 def test_chart_generation():
     import chart
     path = chart.generate_chart()
@@ -293,6 +300,7 @@ def test_chart_generation():
 
 # ── API 통합 테스트 ──
 
+@requires_api
 def test_fetch_weather():
     data = wb.fetch_weather()
     assert "current" in data
@@ -300,12 +308,14 @@ def test_fetch_weather():
     assert "hourly" in data
 
 
+@requires_api
 def test_fetch_air_quality():
     data = wb.fetch_air_quality()
     assert "current" in data
     assert "pm2_5" in data["current"]
 
 
+@requires_api
 def test_build_blocks():
     data = wb.fetch_weather()
     air = wb.fetch_air_quality()
@@ -341,6 +351,7 @@ def test_heat_index():
     assert wb.calc_heat_index(20, 50) == 20  # 27°C 미만이면 적용 안 됨
 
 
+@requires_api
 def test_comfort_timeline():
     data = wb.fetch_weather()
     tl = wb.build_comfort_timeline(data)
@@ -390,6 +401,7 @@ def test_weather_quote():
     assert len(quote) > 5
 
 
+@requires_api
 def test_history_log():
     import history
     record = history.log_today()
@@ -530,6 +542,7 @@ def test_weather_mood_extreme_cold():
     assert isinstance(mood, str)
 
 
+@requires_api
 def test_validate_weather_data():
     data = wb.fetch_weather()
     assert wb.validate_weather_data(data) is True
@@ -539,6 +552,7 @@ def test_validate_bad_data():
     assert wb.validate_weather_data({"current": {"temperature_2m": 999}}) is False
 
 
+@requires_api
 def test_build_fallback_text():
     data = wb.fetch_weather()
     text = wb.build_fallback_text(data)

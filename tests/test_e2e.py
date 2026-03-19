@@ -4,7 +4,10 @@ import os
 os.environ.setdefault("SLACK_BOT_TOKEN", "test")
 os.environ.setdefault("SLACK_CHANNEL", "test")
 
+from conftest import requires_api
 
+
+@requires_api
 def test_full_daily_pipeline():
     """일일 브리핑 전체 파이프라인 (Slack 전송 제외)"""
     from weather_bot import (
@@ -42,6 +45,7 @@ def test_full_daily_pipeline():
     assert "context" in block_types
 
 
+@requires_api
 def test_full_digest_pipeline():
     """다이제스트 파이프라인"""
     from weather_bot import (
@@ -77,6 +81,7 @@ def test_full_digest_pipeline():
     assert len(outfit) > 5
 
 
+@requires_api
 def test_weekly_summary_pipeline():
     """주간 요약 파이프라인"""
     from weekly_summary import build_weekly_summary
@@ -87,6 +92,7 @@ def test_weekly_summary_pipeline():
     assert blocks[0]["type"] == "header"
 
 
+@requires_api
 def test_alert_pipeline():
     """긴급 알림 파이프라인"""
     from alert import check_alerts
@@ -98,6 +104,7 @@ def test_alert_pipeline():
         assert len(a) == 3
 
 
+@requires_api
 def test_chart_pipeline():
     """차트 생성 파이프라인"""
     from chart import generate_chart
@@ -109,6 +116,7 @@ def test_chart_pipeline():
     os.unlink(path)
 
 
+@requires_api
 def test_history_pipeline():
     """히스토리 파이프라인"""
     from history import get_stats, load_history, log_today
@@ -124,6 +132,7 @@ def test_history_pipeline():
     assert "rainy_days" in stats
 
 
+@requires_api
 def test_badge_pipeline():
     """배지 생성 파이프라인"""
     from badge import generate_badge
