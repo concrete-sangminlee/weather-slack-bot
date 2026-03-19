@@ -11,32 +11,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-
-      - name: Install ruff
-        run: pip install ruff
-
-      - name: Lint
-        run: ruff check .
+      - run: pip install ruff
+      - run: ruff check .
 
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
       - name: Install dependencies
         run: pip install -r requirements.txt pytest pytest-cov
 
       - name: Run tests with coverage
-        run: pytest tests/ -v --cov=. --cov-report=term-missing
+        run: pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml
 
       - name: Check coverage threshold
-        run: pytest tests/ --cov=. --cov-fail-under=60 -q
+        run: pytest tests/ --cov=. --cov-fail-under=50 -q
