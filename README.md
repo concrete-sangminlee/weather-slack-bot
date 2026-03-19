@@ -78,6 +78,7 @@ Every message includes **20+ data points** across 5 categories:
 | **Humidity & Precipitation** | Humidity (%), current / total rainfall, snowfall, rain probability, precipitation hours |
 | **Wind** | Speed (m/s), gusts, direction, daily max speed / gusts / dominant direction |
 | **Sun & UV** | Sunrise, sunset, daylight duration, sunshine hours, UV index, solar radiation (MJ/m²) |
+| **Air Quality** | US AQI, PM2.5 (fine dust), PM10, CO, NO₂, O₃ |
 
 ### Hourly & Multi-Day Forecast
 
@@ -105,6 +106,9 @@ Over **30 context-aware tip presets** that adapt to weather conditions:
 | Gusts (20+ m/s) | ⚠️ Loose objects may blow away |
 | Fog | 🌫️ Use headlights, drive slowly |
 | Overcast (90%+) | ☁️ Grab a warm drink |
+| PM2.5 bad (>35 µg/m³) | 😷 Wear a mask outdoors |
+| PM2.5 very bad (>75) | 🚫 Stay indoors, KF94 mask required |
+| AQI unhealthy (>150) | 😷 Sensitive groups reduce outdoor time |
 | Perfect weather | 🌈 Perfect day for a walk! |
 
 ### Formatting & Automation

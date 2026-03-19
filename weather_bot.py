@@ -1,11 +1,15 @@
 import os
 import sys
+import time
 from datetime import datetime
 
 import requests
 from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
+MAX_RETRIES = 3
+RETRY_DELAY = 5
 
 load_dotenv()
 
@@ -84,6 +88,18 @@ def uv_index_level(uv):
     return "위험 :skull:"
 
 
+def _request_with_retry(url, params):
+    for attempt in range(MAX_RETRIES):
+        try:
+            resp = requests.get(url, params=params, timeout=10)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException:
+            if attempt == MAX_RETRIES - 1:
+                raise
+            time.sleep(RETRY_DELAY * (attempt + 1))
+
+
 def fetch_weather():
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
@@ -135,14 +151,47 @@ def fetch_weather():
         "timezone": "Asia/Seoul",
         "forecast_days": 3,
     }
-    resp = requests.get(url, params=params, timeout=10)
-    resp.raise_for_status()
-    return resp.json()
+    return _request_with_retry(url, params)
+
+
+def fetch_air_quality():
+    url = "https://air-quality-api.open-meteo.com/v1/air-quality"
+    params = {
+        "latitude": SEOUL_LAT,
+        "longitude": SEOUL_LON,
+        "current": "pm10,pm2_5,us_aqi,carbon_monoxide,nitrogen_dioxide,ozone",
+        "timezone": "Asia/Seoul",
+    }
+    return _request_with_retry(url, params)
+
+
+def aqi_level(aqi):
+    if aqi <= 50:
+        return "좋음 :large_green_circle:"
+    if aqi <= 100:
+        return "보통 :large_yellow_circle:"
+    if aqi <= 150:
+        return "민감군 나쁨 :large_orange_circle:"
+    if aqi <= 200:
+        return "나쁨 :red_circle:"
+    if aqi <= 300:
+        return "매우 나쁨 :purple_circle:"
+    return "위험 :skull:"
+
+
+def pm_level(pm25):
+    if pm25 <= 15:
+        return "좋음"
+    if pm25 <= 35:
+        return "보통"
+    if pm25 <= 75:
+        return "나쁨"
+    return "매우 나쁨"
 
 
 def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
                   humidity, uv, wind_ms, gust_ms, precip_prob,
-                  precip_sum, cloud_cover, snow_sum):
+                  precip_sum, cloud_cover, snow_sum, aqi=None, pm25=None):
     tips = []
 
     # ── 강수 관련 ──
@@ -235,6 +284,15 @@ def generate_tips(main_weather, temp, feels_like, temp_max, temp_min,
     if main_weather == "Fog":
         tips.append(":fog: 안개가 짙습니다. 운전 시 전조등 켜고 서행하세요.")
 
+    # ── 대기질 관련 ──
+    if pm25 is not None:
+        if pm25 > 75:
+            tips.append(":no_entry_sign: 초미세먼지 매우 나쁨! 외출 자제, KF94 마스크 필수.")
+        elif pm25 > 35:
+            tips.append(":mask: 초미세먼지 나쁨. 마스크를 착용하세요.")
+    if aqi is not None and aqi > 150 and (pm25 is None or pm25 <= 35):
+        tips.append(":mask: 대기질이 나쁩니다. 민감군은 외출을 줄이세요.")
+
     # ── 흐림/구름 ──
     if cloud_cover >= 90 and main_weather not in ("Rain", "Drizzle", "Thunderstorm", "Snow", "Fog"):
         tips.append(":cloud: 하늘이 잔뜩 흐려요. 기분 전환에 따뜻한 음료 한 잔 어때요?")
@@ -264,7 +322,7 @@ def format_duration(seconds):
     return f"{hours}시간 {minutes}분"
 
 
-def build_blocks(data):
+def build_blocks(data, air_data=None):
     cur = data["current"]
     daily = data["daily"]
 
@@ -301,10 +359,21 @@ def build_blocks(data):
     uv_max = daily["uv_index_max"][0]
     radiation = daily["shortwave_radiation_sum"][0]
 
+    # 대기질 데이터 추출
+    aqi = pm25 = pm10 = co = no2 = o3 = None
+    if air_data and "current" in air_data:
+        aq = air_data["current"]
+        aqi = aq.get("us_aqi")
+        pm25 = aq.get("pm2_5")
+        pm10 = aq.get("pm10")
+        co = aq.get("carbon_monoxide")
+        no2 = aq.get("nitrogen_dioxide")
+        o3 = aq.get("ozone")
+
     tips = generate_tips(
         main_weather, temp, feels_like, temp_max, temp_min,
         humidity, uv_max, wind_speed, gust_max, precip_prob,
-        precip_sum, cloud_cover, snow_sum,
+        precip_sum, cloud_cover, snow_sum, aqi, pm25,
     )
 
     WEEKDAYS_KR = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
@@ -403,6 +472,9 @@ def build_blocks(data):
         },
         {"type": "divider"},
 
+        # ── 대기질 ──
+        *_build_air_quality_blocks(aqi, pm25, pm10, co, no2, o3),
+
         # ── 시간별 예보 (향후 6시간) ──
         {"type": "divider"},
         {
@@ -440,6 +512,30 @@ def build_blocks(data):
     ]
 
     return blocks
+
+
+def _build_air_quality_blocks(aqi, pm25, pm10, co, no2, o3):
+    if aqi is None:
+        return []
+
+    return [
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":dash: *대기질 (AQI)*\n{aqi} ({aqi_level(aqi)})"},
+                {"type": "mrkdwn", "text": f":small_blue_diamond: *초미세먼지 PM2.5*\n{pm25} µg/m³ ({pm_level(pm25)})"},
+                {"type": "mrkdwn", "text": f":small_orange_diamond: *미세먼지 PM10*\n{pm10} µg/m³"},
+                {"type": "mrkdwn", "text": f":test_tube: *오존*\n{o3} µg/m³"},
+            ],
+        },
+        {
+            "type": "context",
+            "elements": [
+                {"type": "mrkdwn", "text": f"CO {co} µg/m³ · NO₂ {no2} µg/m³ · O₃ {o3} µg/m³"},
+            ],
+        },
+        {"type": "divider"},
+    ]
 
 
 def _build_hourly_blocks(data):
@@ -533,7 +629,11 @@ def send_to_slack(blocks, fallback_text):
 def main():
     try:
         data = fetch_weather()
-        blocks = build_blocks(data)
+        try:
+            air_data = fetch_air_quality()
+        except requests.RequestException:
+            air_data = None
+        blocks = build_blocks(data, air_data)
         fallback_text = build_fallback_text(data)
         send_to_slack(blocks, fallback_text)
         print("날씨 메시지 전송 완료!")
