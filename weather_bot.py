@@ -100,7 +100,7 @@ def uv_index_level(uv: float) -> str:
 def _request_with_retry(url, params):
     for attempt in range(MAX_RETRIES):
         try:
-            resp = requests.get(url, params=params, timeout=10)
+            resp = requests.get(url, params=params, timeout=30)
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException:
