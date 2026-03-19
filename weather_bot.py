@@ -3,44 +3,30 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from pathlib import Path
 
 import requests
-import yaml
-from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "3.3.0"
+from config_loader import (
+    CITY_LAT,
+    CITY_LON,
+    CITY_NAME,
+    CONFIG,
+    DAILY_DAYS,
+    DISPLAY,
+    PAST_DAYS,
+    SLACK_BOT_TOKEN,
+    SLACK_CHANNEL,
+    TIMEZONE,
+    TREND_DAYS,
+    L,
+)
+
+__version__ = "3.4.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
-
-load_dotenv()
-
-# ── 설정 로드 ──
-_CONFIG_PATH = Path(__file__).parent / "config.yml"
-with open(_CONFIG_PATH, encoding="utf-8") as f:
-    CONFIG = yaml.safe_load(f)
-
-# ── 다국어 로드 ──
-_LOCALE = CONFIG.get("locale", "ko")
-_LOCALE_PATH = Path(__file__).parent / "locales" / f"{_LOCALE}.yml"
-with open(_LOCALE_PATH, encoding="utf-8") as f:
-    L = yaml.safe_load(f)
-
-SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
-SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "#weather")
-
-CITY_NAME = CONFIG["city"]["name"]
-CITY_LAT = CONFIG["city"]["latitude"]
-CITY_LON = CONFIG["city"]["longitude"]
-TIMEZONE = CONFIG["timezone"]
-HOURLY_HOURS = CONFIG["forecast"]["hourly_hours"]
-DAILY_DAYS = CONFIG["forecast"]["daily_days"]
-PAST_DAYS = CONFIG["forecast"]["past_days"]
-TREND_DAYS = CONFIG["forecast"].get("trend_days", 7)
-DISPLAY = CONFIG["display"]
 
 # Open-Meteo WMO Weather Code 매핑
 WMO_DESCRIPTIONS = {

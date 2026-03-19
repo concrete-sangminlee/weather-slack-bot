@@ -291,6 +291,38 @@ def cmd_chart():
     print(f"Chart saved: {path}")
 
 
+def cmd_compare():
+    """히스토리에서 두 날짜 날씨 비교"""
+    from history import load_history
+
+    history = load_history()
+    if len(history) < 2:
+        print("비교하려면 최소 2일 이상의 히스토리가 필요합니다.")
+        print(f"현재 {len(history)}일 기록됨. `weather-bot history`로 오늘 데이터를 먼저 저장하세요.")
+        return
+
+    latest = history[-1]
+    prev = history[-2]
+
+    temp_diff = latest["temp"] - prev["temp"]
+    score_diff = latest["lifestyle_score"] - prev["lifestyle_score"]
+
+    sign = "+" if temp_diff > 0 else ""
+    s_sign = "+" if score_diff > 0 else ""
+
+    print(f"""📊 날씨 비교: {prev['date']} vs {latest['date']}
+
+| 항목 | {prev['date']} | {latest['date']} | 변화 |
+|------|{'-' * len(prev['date']) + '--'}|{'-' * len(latest['date']) + '--'}|------|
+| 날씨 | {prev['weather']} | {latest['weather']} | |
+| 기온 | {prev['temp']}°C | {latest['temp']}°C | {sign}{temp_diff:.1f}°C |
+| 최고 | {prev['temp_max']}°C | {latest['temp_max']}°C | {'+' if latest['temp_max'] > prev['temp_max'] else ''}{latest['temp_max'] - prev['temp_max']:.1f}°C |
+| 최저 | {prev['temp_min']}°C | {latest['temp_min']}°C | {'+' if latest['temp_min'] > prev['temp_min'] else ''}{latest['temp_min'] - prev['temp_min']:.1f}°C |
+| 습도 | {prev['humidity']}% | {latest['humidity']}% | |
+| 등급 | {prev['grade']} ({prev['lifestyle_score']}) | {latest['grade']} ({latest['lifestyle_score']}) | {s_sign}{score_diff} |
+""")
+
+
 def cmd_stats():
     """프로젝트 + 날씨 히스토리 통계"""
     from pathlib import Path
@@ -356,13 +388,14 @@ commands:
   export    Export weather data as Markdown
   json      Export weather data as JSON
   history   Log today's weather & show stats
+  compare   Compare last 2 days from history
   stats     Project + weather history statistics
   version   Show version info
         """,
     )
     parser.add_argument(
         "command",
-        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "stats", "version"],
+        choices=["daily", "digest", "weekly", "alert", "chart", "export", "json", "history", "compare", "stats", "version"],
         help="command to run",
     )
     parser.add_argument(
@@ -389,6 +422,8 @@ commands:
         cmd_json()
     elif args.command == "history":
         cmd_history()
+    elif args.command == "compare":
+        cmd_compare()
     elif args.command == "stats":
         cmd_stats()
     elif args.command == "version":
