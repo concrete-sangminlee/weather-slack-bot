@@ -243,6 +243,55 @@ def test_moon_phase():
     assert "달" in phase or "삭" in phase or "보름" in phase
 
 
+# ── 골든아워 ──
+
+def test_golden_hour():
+    from datetime import datetime
+    result = wb.calc_golden_hour(
+        datetime.now().replace(hour=6, minute=30).isoformat(),
+        datetime.now().replace(hour=18, minute=42).isoformat(),
+    )
+    assert ":camera:" in result
+    assert "06:30" in result
+    assert "18:42" in result
+
+
+# ── 멀티채널 ──
+
+def test_get_channels_default():
+    channels = wb._get_channels()
+    assert isinstance(channels, list)
+    assert len(channels) >= 1
+
+
+# ── alert.py ──
+
+def test_alert_check():
+    import alert
+    alerts = alert.check_alerts()
+    assert isinstance(alerts, list)
+
+
+# ── weekly_summary.py ──
+
+def test_weekly_summary():
+    import weekly_summary as ws
+    blocks = ws.build_weekly_summary()
+    assert isinstance(blocks, list)
+    assert blocks[0]["type"] == "header"
+
+
+# ── chart.py ──
+
+def test_chart_generation():
+    import chart
+    path = chart.generate_chart()
+    assert path.endswith(".png")
+    import os
+    assert os.path.exists(path)
+    os.unlink(path)
+
+
 # ── API 통합 테스트 ──
 
 def test_fetch_weather():

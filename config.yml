@@ -8,7 +8,6 @@ city:
   longitude: 126.9780
 
 # Compare with other cities (optional, max 3)
-# Adds a compact comparison row for each city
 compare_cities:
   # - name: 부산
   #   latitude: 35.1796
@@ -16,9 +15,6 @@ compare_cities:
   # - name: 제주
   #   latitude: 33.4996
   #   longitude: 126.5312
-  # - name: Tokyo
-  #   latitude: 35.6762
-  #   longitude: 139.6503
 
 # Language (ko, en, ja)
 locale: ko
@@ -28,12 +24,12 @@ timezone: Asia/Seoul
 
 # Forecast settings
 forecast:
-  hourly_hours: 6       # Number of hours to show in hourly forecast
-  daily_days: 3         # Number of days in daily forecast (max 7)
-  past_days: 1          # Days of history for comparison (0 to disable)
-  trend_days: 7         # Days for weekly temperature trend chart
+  hourly_hours: 6
+  daily_days: 3
+  past_days: 1
+  trend_days: 7
 
-# Display settings
+# Display toggles
 display:
   show_air_quality: true
   show_hourly: true
@@ -42,3 +38,22 @@ display:
   show_best_time: true
   show_weekly_trend: true
   show_city_comparison: true
+  show_golden_hour: true
+
+# Alert thresholds (for alert.py extreme weather checks)
+alerts:
+  temp_high: 35         # °C — heatwave
+  temp_low: -15         # °C — cold wave
+  wind_speed: 14        # m/s — strong wind
+  wind_gust: 25         # m/s — dangerous gusts
+  precip_heavy: 30      # mm — heavy rain
+  precip_moderate: 10   # mm — moderate rain
+  aqi_danger: 200       # AQI — very unhealthy
+  aqi_warn: 150         # AQI — unhealthy
+
+# Multiple Slack channels (optional)
+# If set, sends to all channels. Overrides SLACK_CHANNEL env var.
+# slack_channels:
+#   - general
+#   - weather
+#   - team-alerts

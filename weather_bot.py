@@ -484,6 +484,22 @@ def get_moon_phase():
     return ":new_moon: 삭(새달)"
 
 
+def calc_golden_hour(sunrise_str, sunset_str):
+    """사진 촬영 골든아워 계산 (일출/일몰 전후 30분)"""
+    sunrise = datetime.fromisoformat(sunrise_str)
+    sunset = datetime.fromisoformat(sunset_str)
+
+    morning_start = sunrise.strftime("%H:%M")
+    morning_end = (sunrise.replace(minute=sunrise.minute + 30) if sunrise.minute + 30 < 60
+                   else sunrise.replace(hour=sunrise.hour + 1, minute=(sunrise.minute + 30) % 60)).strftime("%H:%M")
+
+    evening_start = (sunset.replace(minute=sunset.minute - 30) if sunset.minute >= 30
+                     else sunset.replace(hour=sunset.hour - 1, minute=sunset.minute + 30)).strftime("%H:%M")
+    evening_end = sunset.strftime("%H:%M")
+
+    return f":camera: {morning_start}~{morning_end} / {evening_start}~{evening_end}"
+
+
 def get_tomorrow_alert(data):
     """내일 날씨가 오늘과 크게 다를 때 알림 생성"""
     daily = data["daily"]
@@ -900,6 +916,7 @@ def build_blocks(data, air_data=None):
     daylight = format_duration(daily["daylight_duration"][today_idx])
     daylight_bar, _ = calc_daylight_progress(sunrise_raw, sunset_raw)
     moon_phase = get_moon_phase()
+    golden_hour = calc_golden_hour(sunrise_raw, sunset_raw) if DISPLAY.get("show_golden_hour", True) else ""
     wind_max = kmh_to_ms(daily["wind_speed_10m_max"][today_idx])
     gust_max = kmh_to_ms(daily["wind_gusts_10m_max"][today_idx])
     wind_dir_dominant = wind_direction_to_text(daily["wind_direction_10m_dominant"][today_idx])
@@ -1007,7 +1024,7 @@ def build_blocks(data, air_data=None):
         },
         {
             "type": "context",
-            "elements": [{"type": "mrkdwn", "text": f"{daylight_bar} · {moon_phase}"}],
+            "elements": [{"type": "mrkdwn", "text": f"{daylight_bar} · {moon_phase}" + (f" · {golden_hour}" if golden_hour else "")}],
         },
         {"type": "divider"},
 
@@ -1250,25 +1267,33 @@ def build_fallback_text(data):
     return f"{CITY_NAME} 오늘의 날씨: {description}, {temp}°C"
 
 
+def _get_channels():
+    """설정된 모든 채널 리스트 반환"""
+    channels = CONFIG.get("slack_channels")
+    if channels:
+        return channels
+    return [SLACK_CHANNEL]
+
+
 def send_to_slack(blocks, fallback_text, chart_path=None):
     client = WebClient(token=SLACK_BOT_TOKEN)
-    resp = client.chat_postMessage(
-        channel=SLACK_CHANNEL,
-        text=fallback_text,
-        blocks=blocks,
-    )
-    # 차트 이미지를 스레드에 업로드 (files:write 권한 필요, 없으면 스킵)
-    if chart_path:
-        try:
-            client.files_upload_v2(
-                channel=SLACK_CHANNEL,
-                file=chart_path,
-                title=f"{CITY_NAME} {TREND_DAYS}-Day Trend",
-                initial_comment=":chart_with_upwards_trend: Temperature Trend",
-                thread_ts=resp["ts"],
-            )
-        except SlackApiError:
-            pass  # files:write 권한 없으면 차트 업로드 스킵
+    for channel in _get_channels():
+        resp = client.chat_postMessage(
+            channel=channel,
+            text=fallback_text,
+            blocks=blocks,
+        )
+        if chart_path:
+            try:
+                client.files_upload_v2(
+                    channel=channel,
+                    file=chart_path,
+                    title=f"{CITY_NAME} {TREND_DAYS}-Day Trend",
+                    initial_comment=":chart_with_upwards_trend: Temperature Trend",
+                    thread_ts=resp["ts"],
+                )
+            except SlackApiError:
+                pass
 
 
 def _build_health_block(risks):
