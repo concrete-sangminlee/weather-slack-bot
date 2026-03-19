@@ -1,69 +1,117 @@
 # ☀️ Seoul Weather Slack Bot
 
-매일 아침 7시, 서울의 날씨를 Slack으로 알려주는 봇입니다.
+A Slack bot that delivers a comprehensive daily weather briefing for Seoul every morning — fully automated with GitHub Actions.
 
-<img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python"> <img src="https://img.shields.io/badge/Slack-Bot-4A154B?logo=slack&logoColor=white" alt="Slack"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/weather.yml?label=Daily%20Weather&logo=githubactions&logoColor=white" alt="Workflow Status">
+No API keys needed. No servers to maintain. Just fork, set two secrets, and go.
 
-## 📱 Slack 메시지 예시
+<img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python"> <img src="https://img.shields.io/badge/Slack-Bot-4A154B?logo=slack&logoColor=white" alt="Slack"> <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/weather.yml?label=Daily%20Weather&logo=githubactions&logoColor=white" alt="Workflow Status"> <img src="https://img.shields.io/badge/API-Open--Meteo-orange" alt="Open-Meteo"> <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+
+## 📱 Slack Message Preview
 
 ```
 ☀️ 서울 오늘의 날씨
-━━━━━━━━━━━━━━━
-🌡️ 기온: 9.5°C (체감 6.3°C)
-🌤️ 날씨: 맑음
-💧 습도: 34%
-━━━━━━━━━━━━━━━
-💡 오늘의 팁: 🍃 좋은 하루 보내세요!
+━━━━━━━━━━━━━━━━━━━━
+
+🌡️ 기온
+  현재: 9.5°C (체감 6.3°C)
+  최고: 12.1°C / 최저: -1.6°C
+
+🌤️ 날씨
+  상태: 맑음 | 구름량: 10% | 기압: 1018.4 hPa
+
+💧 습도 & 강수
+  습도: 34% | 강수 확률: 0%
+
+💨 바람
+  풍속: 8.6 km/h (돌풍 38.2 km/h) | 풍향: 서
+
+☀️ 일조 & 자외선
+  일출: 06:37 / 일몰: 18:42
+  자외선 지수: 5.9 (높음)
+
+━━━━━━━━━━━━━━━━━━━━
+💡 오늘의 팁
+  • 🍃 좋은 하루 보내세요!
 ```
 
-## ✨ 기능
+## ✨ Features
 
-- **실시간 날씨 정보** — 기온, 체감 기온, 날씨 상태, 습도
-- **상황별 한줄 팁** — 비/눈/폭염/한파 등 날씨에 맞는 조언
-- **매일 자동 실행** — GitHub Actions로 매일 아침 7시(KST) 전송
-- **수동 실행 지원** — Actions 탭에서 언제든 수동 실행 가능
+- **Comprehensive weather data** — temperature (current / high / low / feels-like), cloud cover, pressure, humidity, precipitation (amount / probability / duration), wind (speed / gusts / direction), sunrise & sunset, daylight & sunshine hours, UV index, solar radiation
+- **Context-aware daily tips** — rain, snow, heatwave, cold snap, UV exposure, strong wind alerts
+- **Fully automated** — runs every day at 7:00 AM KST via GitHub Actions cron
+- **No API key required** — powered by [Open-Meteo](https://open-meteo.com/), a free and open-source weather API
+- **Manual trigger** — run anytime from the Actions tab
 
-## 🛠️ 기술 스택
+## 🛠️ Tech Stack
 
-| 구분 | 기술 |
-|------|------|
-| 날씨 API | [Open-Meteo](https://open-meteo.com/) (무료, 키 불필요) |
-| Slack 연동 | [slack-sdk](https://slack.dev/python-slack-sdk/) |
-| 스케줄링 | GitHub Actions (cron) |
-| 언어 | Python 3.12 |
+| Component | Technology |
+|-----------|-----------|
+| Weather API | [Open-Meteo](https://open-meteo.com/) — free, no API key needed |
+| Slack SDK | [slack-sdk](https://slack.dev/python-slack-sdk/) for Python |
+| Scheduler | GitHub Actions (cron schedule) |
+| Language | Python 3.12 |
 
-## 🚀 설정 방법
+## 🚀 Quick Start
 
-### 1. Slack App 생성
+### 1. Fork this repo
 
-1. [Slack API](https://api.slack.com/apps)에서 새 앱 생성
-2. **OAuth & Permissions** → Bot Token Scopes에 `chat:write` 추가
-3. 워크스페이스에 설치 후 `xoxb-` 토큰 복사
-4. 메시지를 받을 채널에 봇 초대 (`/invite @봇이름`)
+Click the **Fork** button at the top right of this page.
 
-### 2. GitHub Secrets 등록
+### 2. Create a Slack App
+
+1. Go to [Slack API](https://api.slack.com/apps) → **Create New App** → From scratch
+2. Navigate to **OAuth & Permissions** → add `chat:write` to Bot Token Scopes
+3. Click **Install to Workspace** and copy the `xoxb-` Bot Token
+4. Invite the bot to your target channel: `/invite @your-bot-name`
+
+### 3. Set GitHub Secrets
+
+Go to your forked repo → **Settings** → **Secrets and variables** → **Actions**, and add:
+
+| Secret | Value |
+|--------|-------|
+| `SLACK_BOT_TOKEN` | Your `xoxb-...` bot token |
+| `SLACK_CHANNEL` | Channel name without `#` (e.g. `general`) |
+
+Or use the CLI:
 
 ```bash
-gh secret set SLACK_BOT_TOKEN    # Slack Bot 토큰 입력
-gh secret set SLACK_CHANNEL      # 채널명 입력 (예: general)
+gh secret set SLACK_BOT_TOKEN
+gh secret set SLACK_CHANNEL
 ```
 
-### 3. 완료!
+### 4. Done!
 
-매일 아침 7시(KST)에 자동으로 날씨가 전송됩니다.
+The bot will automatically send a weather message every day at 7:00 AM KST.
 
-수동 실행: **Actions** 탭 → **Seoul Weather Bot** → **Run workflow**
+To test immediately: **Actions** tab → **Seoul Weather Bot** → **Run workflow**
 
-## 📁 프로젝트 구조
+## 🌍 Customization
+
+Want to change the city? Edit the coordinates in `weather_bot.py`:
+
+```python
+SEOUL_LAT = 37.5665  # Change to your city's latitude
+SEOUL_LON = 126.9780  # Change to your city's longitude
+```
+
+Want to change the schedule? Edit the cron expression in `.github/workflows/weather.yml`:
+
+```yaml
+schedule:
+  - cron: '0 22 * * *'  # UTC time (22:00 UTC = 07:00 KST)
+```
+
+## 📁 Project Structure
 
 ```
-├── weather_bot.py          # 메인 봇 스크립트
-├── requirements.txt        # Python 의존성
-├── .env.example            # 환경 변수 템플릿
+├── weather_bot.py              # Main bot script
+├── requirements.txt            # Python dependencies
+├── .env.example                # Environment variable template (for local dev)
 └── .github/workflows/
-    └── weather.yml         # GitHub Actions 워크플로우
+    └── weather.yml             # GitHub Actions workflow
 ```
 
 ## 📄 License
 
-MIT
+MIT — feel free to use, modify, and share.
