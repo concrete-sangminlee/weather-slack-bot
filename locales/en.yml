@@ -1,0 +1,67 @@
+# English
+greeting:
+  dawn: ":crescent_moon: Late Night"
+  morning: ":sunrise: Good Morning"
+  am: ":sun_with_face: Morning"
+  pm: ":sunny: Afternoon"
+  evening: ":city_sunset: Evening"
+
+header: "{city_name} {greeting}"
+summary_precip: " · :droplet:{precip_prob}%"
+
+sections:
+  temperature: "Temperature"
+  current_temp: "Now {temp}°C (feels {feels_like}°C)"
+  high: "High"
+  low: "Low"
+  feels: "Feels"
+  yesterday_cmp: "vs Yesterday: High {sign_max}{diff_max}°C / Low {sign_min}{diff_min}°C"
+
+  weather: "Weather"
+  cloud_cover: "Cloud Cover"
+  pressure: "Pressure"
+  humidity: "Humidity"
+  visibility: "Visibility"
+  dew_point: "Dew Point"
+
+  precip_prob: "Rain Chance"
+  precip_current: "Current Precip"
+  precip_expected: "Total Precip"
+  precip_hours: "Rain Hours"
+
+  wind_speed: "Wind"
+  gusts: "Gusts"
+  wind_dir: "Direction"
+  max_wind: "Max Wind"
+
+  sunrise: "Sunrise"
+  sunset: "Sunset"
+  daylight: "Daylight"
+  sunshine: "Sunshine"
+  uv_index: "UV Index"
+  radiation: "Radiation"
+
+  air_quality: "Air Quality (AQI)"
+  pm25: "Fine Dust PM2.5"
+  pm10: "Dust PM10"
+  ozone: "Ozone"
+
+  hourly_forecast: "Hourly Forecast"
+  daily_forecast: "{days}-Day Forecast"
+  weekly_trend: "Weekly Temperature Trend"
+  lifestyle_index: "Lifestyle Index"
+  outfit: "What to Wear"
+  tips: "Daily Tips"
+  activity: "Suggested Activities"
+  health: "Health Advisory"
+  tomorrow_alert: "Tomorrow's Weather Change"
+  city_comparison: "Other Cities"
+
+  discomfort: "Discomfort Index"
+  laundry: "Laundry Index"
+  car_wash: "Car Wash Index"
+  food_safety: "Food Safety"
+  best_time: "Best Outdoor Time"
+  indoor_recommend: "Staying indoors is recommended today."
+
+footer: "Powered by Open-Meteo API"

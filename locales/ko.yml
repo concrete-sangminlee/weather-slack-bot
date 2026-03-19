@@ -1,0 +1,67 @@
+# Korean (default)
+greeting:
+  dawn: ":crescent_moon: 새벽"
+  morning: ":sunrise: 좋은 아침"
+  am: ":sun_with_face: 오전"
+  pm: ":sunny: 오후"
+  evening: ":city_sunset: 저녁"
+
+header: "{city_name} {greeting}"
+summary_precip: " · :droplet:{precip_prob}%"
+
+sections:
+  temperature: "기온"
+  current_temp: "현재 {temp}°C (체감 {feels_like}°C)"
+  high: "최고"
+  low: "최저"
+  feels: "체감"
+  yesterday_cmp: "어제 대비 최고 {sign_max}{diff_max}°C / 최저 {sign_min}{diff_min}°C"
+
+  weather: "날씨"
+  cloud_cover: "구름량"
+  pressure: "기압"
+  humidity: "습도"
+  visibility: "가시거리"
+  dew_point: "이슬점"
+
+  precip_prob: "강수 확률"
+  precip_current: "현재 강수량"
+  precip_expected: "예상 강수량"
+  precip_hours: "강수 시간"
+
+  wind_speed: "풍속"
+  gusts: "돌풍"
+  wind_dir: "풍향"
+  max_wind: "최대 풍속"
+
+  sunrise: "일출"
+  sunset: "일몰"
+  daylight: "낮 길이"
+  sunshine: "일조 시간"
+  uv_index: "자외선 지수"
+  radiation: "일사량"
+
+  air_quality: "대기질 (AQI)"
+  pm25: "초미세먼지 PM2.5"
+  pm10: "미세먼지 PM10"
+  ozone: "오존"
+
+  hourly_forecast: "시간별 예보"
+  daily_forecast: "{days}일 예보"
+  weekly_trend: "주간 기온 트렌드"
+  lifestyle_index: "오늘의 생활지수"
+  outfit: "오늘의 옷차림"
+  tips: "오늘의 팁"
+  activity: "추천 활동"
+  health: "건강 주의보"
+  tomorrow_alert: "내일 날씨 변화"
+  city_comparison: "다른 도시 날씨"
+
+  discomfort: "불쾌지수"
+  laundry: "빨래 지수"
+  car_wash: "세차 지수"
+  food_safety: "식중독 지수"
+  best_time: "최적 외출 시간"
+  indoor_recommend: "오늘은 실내 활동을 추천합니다."
+
+footer: "Powered by Open-Meteo API"

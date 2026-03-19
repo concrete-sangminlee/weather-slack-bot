@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5
@@ -23,6 +23,12 @@ load_dotenv()
 _CONFIG_PATH = Path(__file__).parent / "config.yml"
 with open(_CONFIG_PATH, encoding="utf-8") as f:
     CONFIG = yaml.safe_load(f)
+
+# ── 다국어 로드 ──
+_LOCALE = CONFIG.get("locale", "ko")
+_LOCALE_PATH = Path(__file__).parent / "locales" / f"{_LOCALE}.yml"
+with open(_LOCALE_PATH, encoding="utf-8") as f:
+    L = yaml.safe_load(f)
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "#weather")
@@ -672,17 +678,18 @@ def get_activity_suggestions(temp, feels_like, main_weather, wind_ms, precip_pro
 
 
 def get_greeting():
-    """시간대별 인사말"""
+    """시간대별 인사말 (다국어)"""
     hour = datetime.now().hour
+    g = L["greeting"]
     if hour < 6:
-        return ":crescent_moon: 새벽"
+        return g["dawn"]
     if hour < 9:
-        return ":sunrise: 좋은 아침"
+        return g["morning"]
     if hour < 12:
-        return ":sun_with_face: 오전"
+        return g["am"]
     if hour < 18:
-        return ":sunny: 오후"
-    return ":city_sunset: 저녁"
+        return g["pm"]
+    return g["evening"]
 
 
 def get_outfit_recommendation(temp, feels_like, main_weather, precip_prob):
@@ -1097,7 +1104,7 @@ def build_blocks(data, air_data=None):
                 {"type": "divider"},
                 {
                     "type": "section",
-                    "text": {"type": "mrkdwn", "text": f"*:chart_with_upwards_trend: 주간 기온 트렌드*\n{weekly_trend}"},
+                    "text": {"type": "mrkdwn", "text": f"*:chart_with_upwards_trend: {L['sections']['weekly_trend']}*\n{weekly_trend}"},
                 },
             ] if weekly_trend else []
         ),
@@ -1109,7 +1116,7 @@ def build_blocks(data, air_data=None):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*:bar_chart: 오늘의 생활지수*\n{lifestyle_bar(life_score)} *{life_score}점* ({lifestyle_label(life_score)})",
+                "text": f"*:bar_chart: {L['sections']['lifestyle_index']}*\n{lifestyle_bar(life_score)} *{life_score}* ({lifestyle_label(life_score)})",
             },
         },
         *(
@@ -1119,10 +1126,10 @@ def build_blocks(data, air_data=None):
         {
             "type": "section",
             "fields": [
-                {"type": "mrkdwn", "text": f":hot_face: *불쾌지수*\n{di} ({discomfort_label(di)})"},
-                {"type": "mrkdwn", "text": f":shirt: *빨래 지수*\n{laundry}점 ({laundry_label(laundry)})"},
-                {"type": "mrkdwn", "text": f":car: *세차 지수*\n{car_wash}점 ({car_wash_label(car_wash)})"},
-                {"type": "mrkdwn", "text": f":bento: *식중독 지수*\n{food_safety}"},
+                {"type": "mrkdwn", "text": f":hot_face: *{L['sections']['discomfort']}*\n{di} ({discomfort_label(di)})"},
+                {"type": "mrkdwn", "text": f":shirt: *{L['sections']['laundry']}*\n{laundry} ({laundry_label(laundry)})"},
+                {"type": "mrkdwn", "text": f":car: *{L['sections']['car_wash']}*\n{car_wash} ({car_wash_label(car_wash)})"},
+                {"type": "mrkdwn", "text": f":bento: *{L['sections']['food_safety']}*\n{food_safety}"},
             ],
         },
 
@@ -1131,7 +1138,7 @@ def build_blocks(data, air_data=None):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*:womans_clothes: 오늘의 옷차림*\n{outfit}",
+                "text": f"*:womans_clothes: {L['sections']['outfit']}*\n{outfit}",
             },
         },
         {
@@ -1152,7 +1159,7 @@ def build_blocks(data, air_data=None):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "*:bulb: 오늘의 팁*\n" + "\n".join(f"• {t}" for t in tips),
+                "text": f"*:bulb: {L['sections']['tips']}*\n" + "\n".join(f"• {t}" for t in tips),
             },
         },
 

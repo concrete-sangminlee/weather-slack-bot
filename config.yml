@@ -20,6 +20,9 @@ compare_cities:
   #   latitude: 35.6762
   #   longitude: 139.6503
 
+# Language (ko, en, ja)
+locale: ko
+
 # Schedule timezone (IANA format)
 timezone: Asia/Seoul
 

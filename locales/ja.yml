@@ -1,0 +1,67 @@
+# Japanese
+greeting:
+  dawn: ":crescent_moon: 深夜"
+  morning: ":sunrise: おはようございます"
+  am: ":sun_with_face: 午前"
+  pm: ":sunny: 午後"
+  evening: ":city_sunset: こんばんは"
+
+header: "{city_name} {greeting}"
+summary_precip: " · :droplet:{precip_prob}%"
+
+sections:
+  temperature: "気温"
+  current_temp: "現在 {temp}°C (体感 {feels_like}°C)"
+  high: "最高"
+  low: "最低"
+  feels: "体感"
+  yesterday_cmp: "昨日比 最高 {sign_max}{diff_max}°C / 最低 {sign_min}{diff_min}°C"
+
+  weather: "天気"
+  cloud_cover: "雲量"
+  pressure: "気圧"
+  humidity: "湿度"
+  visibility: "視程"
+  dew_point: "露点"
+
+  precip_prob: "降水確率"
+  precip_current: "現在の降水量"
+  precip_expected: "予想降水量"
+  precip_hours: "降水時間"
+
+  wind_speed: "風速"
+  gusts: "突風"
+  wind_dir: "風向"
+  max_wind: "最大風速"
+
+  sunrise: "日の出"
+  sunset: "日の入り"
+  daylight: "日照時間"
+  sunshine: "日光時間"
+  uv_index: "UV指数"
+  radiation: "日射量"
+
+  air_quality: "大気質 (AQI)"
+  pm25: "PM2.5"
+  pm10: "PM10"
+  ozone: "オゾン"
+
+  hourly_forecast: "時間別予報"
+  daily_forecast: "{days}日間予報"
+  weekly_trend: "週間気温トレンド"
+  lifestyle_index: "生活指数"
+  outfit: "今日の服装"
+  tips: "今日のヒント"
+  activity: "おすすめ活動"
+  health: "健康注意報"
+  tomorrow_alert: "明日の天気変化"
+  city_comparison: "他の都市"
+
+  discomfort: "不快指数"
+  laundry: "洗濯指数"
+  car_wash: "洗車指数"
+  food_safety: "食中毒指数"
+  best_time: "最適外出時間"
+  indoor_recommend: "今日は室内活動がおすすめです。"
+
+footer: "Powered by Open-Meteo API"

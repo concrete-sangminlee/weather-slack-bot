@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seoul Weather Slack Bot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+        .hero { text-align: center; padding: 80px 20px 60px; background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); }
+        .hero h1 { font-size: 3rem; margin-bottom: 16px; }
+        .hero p { font-size: 1.25rem; color: #94a3b8; max-width: 600px; margin: 0 auto 32px; }
+        .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; }
+        .badges img { height: 24px; }
+        .cta { display: inline-block; background: #3b82f6; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.1rem; transition: background 0.2s; }
+        .cta:hover { background: #2563eb; }
+        .cta-secondary { background: transparent; border: 2px solid #3b82f6; margin-left: 12px; }
+        .cta-secondary:hover { background: #3b82f6; }
+        .features { max-width: 1000px; margin: 0 auto; padding: 60px 20px; }
+        .features h2 { text-align: center; font-size: 2rem; margin-bottom: 48px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+        .card { background: #1e293b; border-radius: 12px; padding: 24px; border: 1px solid #334155; }
+        .card h3 { font-size: 1.1rem; margin-bottom: 8px; color: #f1f5f9; }
+        .card p { color: #94a3b8; font-size: 0.95rem; }
+        .card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .stats { display: flex; justify-content: center; gap: 48px; padding: 40px 20px; flex-wrap: wrap; }
+        .stat { text-align: center; }
+        .stat .num { font-size: 2.5rem; font-weight: 700; color: #3b82f6; }
+        .stat .label { color: #94a3b8; font-size: 0.9rem; }
+        .setup { max-width: 700px; margin: 0 auto; padding: 60px 20px; }
+        .setup h2 { text-align: center; font-size: 2rem; margin-bottom: 32px; }
+        .step { display: flex; gap: 16px; margin-bottom: 24px; }
+        .step-num { background: #3b82f6; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+        .step-text h4 { margin-bottom: 4px; }
+        .step-text p { color: #94a3b8; }
+        footer { text-align: center; padding: 40px 20px; color: #64748b; border-top: 1px solid #1e293b; }
+        footer a { color: #3b82f6; text-decoration: none; }
+        code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>&#9728;&#65039; Weather Slack Bot</h1>
+        <p>Comprehensive daily weather briefing delivered to Slack every morning. 30+ data points, smart tips, lifestyle indices. Zero config.</p>
+        <div class="badges">
+            <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python">
+            <img src="https://img.shields.io/badge/Slack-Bot-4A154B?logo=slack&logoColor=white" alt="Slack">
+            <img src="https://img.shields.io/github/actions/workflow/status/concrete-sangminlee/weather-slack-bot/weather.yml?label=Daily%20Weather&logo=githubactions&logoColor=white" alt="Status">
+            <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT">
+        </div>
+        <a href="https://github.com/concrete-sangminlee/weather-slack-bot" class="cta">View on GitHub</a>
+        <a href="https://github.com/concrete-sangminlee/weather-slack-bot/fork" class="cta cta-secondary">Fork & Deploy</a>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><div class="num">30+</div><div class="label">Weather Data Points</div></div>
+        <div class="stat"><div class="num">39</div><div class="label">Automated Tests</div></div>
+        <div class="stat"><div class="num">3</div><div class="label">Languages</div></div>
+        <div class="stat"><div class="num">0</div><div class="label">API Keys Needed</div></div>
+    </div>
+
+    <div class="features">
+        <h2>Features</h2>
+        <div class="grid">
+            <div class="card"><div class="icon">&#127777;</div><h3>Complete Weather Data</h3><p>Temperature, humidity, pressure, wind, visibility, dew point, precipitation, cloud cover, UV index, solar radiation.</p></div>
+            <div class="card"><div class="icon">&#128168;</div><h3>Air Quality</h3><p>US AQI, PM2.5, PM10, CO, NO2, O3 — with health advisories when levels are concerning.</p></div>
+            <div class="card"><div class="icon">&#128202;</div><h3>Smart Indices</h3><p>Lifestyle score, discomfort index, laundry/car wash/food safety indices, health risk warnings.</p></div>
+            <div class="card"><div class="icon">&#128087;</div><h3>Outfit & Activities</h3><p>11-tier clothing recommendation + weather-appropriate activity suggestions.</p></div>
+            <div class="card"><div class="icon">&#128200;</div><h3>Forecasts & Trends</h3><p>6-hour hourly, 3-day outlook, 7-day trend chart, tomorrow change alerts.</p></div>
+            <div class="card"><div class="icon">&#127757;</div><h3>Multi-City</h3><p>Compare weather across up to 3 additional cities in a compact view.</p></div>
+            <div class="card"><div class="icon">&#127752;</div><h3>Daylight & Moon</h3><p>Sunrise/sunset progress bar, remaining daylight, current moon phase.</p></div>
+            <div class="card"><div class="icon">&#127760;</div><h3>i18n Ready</h3><p>Korean, English, Japanese locale files. Easy to add more languages.</p></div>
+            <div class="card"><div class="icon">&#9881;</div><h3>Fully Configurable</h3><p>Single config.yml — city, timezone, forecast days, display toggles, language.</p></div>
+        </div>
+    </div>
+
+    <div class="setup">
+        <h2>Get Started in 3 Minutes</h2>
+        <div class="step"><div class="step-num">1</div><div class="step-text"><h4>Fork the repo</h4><p>Click Fork on the GitHub page</p></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><h4>Create a Slack App</h4><p>Add <code>chat:write</code> scope and install to workspace</p></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><h4>Set 2 secrets</h4><p><code>SLACK_BOT_TOKEN</code> and <code>SLACK_CHANNEL</code> in GitHub Settings</p></div></div>
+    </div>
+
+    <footer>
+        <p>MIT License &middot; Made by <a href="https://github.com/concrete-sangminlee">sangmin lee</a> &middot; Powered by <a href="https://open-meteo.com">Open-Meteo</a></p>
+    </footer>
+</body>
+</html>
