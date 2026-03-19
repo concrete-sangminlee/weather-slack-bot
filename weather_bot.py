@@ -491,6 +491,89 @@ def get_health_risks(temp, humidity, wind_ms, uv, pm25):
     return risks
 
 
+def calc_discomfort_index(temp, humidity):
+    """불쾌지수 (Thom's Discomfort Index)"""
+    di = 0.81 * temp + 0.01 * humidity * (0.99 * temp - 14.3) + 46.3
+    return round(di, 1)
+
+
+def discomfort_label(di):
+    if di < 68:
+        return "쾌적"
+    if di < 75:
+        return "보통"
+    if di < 80:
+        return "불쾌"
+    return "매우 불쾌"
+
+
+def calc_laundry_index(temp, humidity, wind_ms, precip_prob):
+    """빨래 지수 (0~100, 높을수록 잘 마름)"""
+    score = 50
+    score += (temp - 15) * 2
+    score -= (humidity - 50) * 0.5
+    score += wind_ms * 3
+    if precip_prob and precip_prob >= 50:
+        score -= 30
+    elif precip_prob and precip_prob >= 30:
+        score -= 15
+    return max(0, min(100, round(score)))
+
+
+def laundry_label(score):
+    if score >= 80:
+        return "매우 좋음 :shirt:"
+    if score >= 60:
+        return "좋음 :tshirt:"
+    if score >= 40:
+        return "보통 :neutral_face:"
+    if score >= 20:
+        return "나쁨 :cloud:"
+    return "매우 나쁨 :x:"
+
+
+def calc_car_wash_index(precip_prob_today, precip_prob_tomorrow, pm25):
+    """세차 지수 (0~100, 높을수록 세차 추천)"""
+    score = 100
+    if precip_prob_today and precip_prob_today >= 50:
+        score -= 40
+    elif precip_prob_today and precip_prob_today >= 30:
+        score -= 20
+    if precip_prob_tomorrow and precip_prob_tomorrow >= 50:
+        score -= 30
+    elif precip_prob_tomorrow and precip_prob_tomorrow >= 30:
+        score -= 15
+    if pm25 is not None:
+        if pm25 > 75:
+            score -= 30
+        elif pm25 > 35:
+            score -= 15
+    return max(0, min(100, round(score)))
+
+
+def car_wash_label(score):
+    if score >= 80:
+        return "세차 추천 :sparkles:"
+    if score >= 60:
+        return "세차 괜찮음 :ok_hand:"
+    if score >= 40:
+        return "보류 추천 :thinking_face:"
+    return "세차 비추 :no_entry_sign:"
+
+
+def calc_food_safety_index(temp, humidity):
+    """식중독 지수 (기온 + 습도 기반)"""
+    if temp >= 35 and humidity >= 80:
+        return "위험 :rotating_light:"
+    if temp >= 30 and humidity >= 70:
+        return "경고 :warning:"
+    if temp >= 26 and humidity >= 60:
+        return "주의 :yellow_circle:"
+    if temp >= 20:
+        return "관심 :eyes:"
+    return "안전 :white_check_mark:"
+
+
 def get_activity_suggestions(temp, feels_like, main_weather, wind_ms, precip_prob, uv):
     """날씨에 맞는 활동 추천"""
     rain_cats = ("Rain", "Drizzle", "Thunderstorm", "Snow")
@@ -776,6 +859,13 @@ def build_blocks(data, air_data=None):
     activity = get_activity_suggestions(temp, feels_like, main_weather, wind_speed, precip_prob, uv_max)
     health_risks = get_health_risks(temp, humidity, wind_speed, uv_max, pm25)
     tomorrow_alerts = get_tomorrow_alert(data)
+
+    # 한국형 생활지수
+    di = calc_discomfort_index(temp, humidity)
+    laundry = calc_laundry_index(temp, humidity, wind_speed, precip_prob)
+    tmr_prob = daily["precipitation_probability_max"][today_idx + 1] if today_idx + 1 < len(daily["time"]) else 0
+    car_wash = calc_car_wash_index(precip_prob, tmr_prob, pm25)
+    food_safety = calc_food_safety_index(temp, humidity)
     weekly_trend = build_weekly_trend(data) if DISPLAY.get("show_weekly_trend", True) else ""
 
     # 한줄 요약
@@ -946,6 +1036,15 @@ def build_blocks(data, air_data=None):
             _build_best_time_block(data)
             if DISPLAY.get("show_best_time", True) else []
         ),
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f":hot_face: *불쾌지수*\n{di} ({discomfort_label(di)})"},
+                {"type": "mrkdwn", "text": f":shirt: *빨래 지수*\n{laundry}점 ({laundry_label(laundry)})"},
+                {"type": "mrkdwn", "text": f":car: *세차 지수*\n{car_wash}점 ({car_wash_label(car_wash)})"},
+                {"type": "mrkdwn", "text": f":bento: *식중독 지수*\n{food_safety}"},
+            ],
+        },
 
         # ── 옷차림 + 활동 추천 ──
         {

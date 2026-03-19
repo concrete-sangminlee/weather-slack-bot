@@ -101,6 +101,10 @@ Every message includes **20+ data points** across 5 categories:
 | **Tomorrow Alert** | Advance warning when tomorrow's weather changes significantly |
 | **Weekly Trend** | 7-day temperature trend mini-chart with color bars |
 | **Time-aware Greeting** | Header changes based on time of day |
+| **Discomfort Index** | Thom's DI — real feel combining temp + humidity (Korean 불쾌지수) |
+| **Laundry Index** | Will your laundry dry today? Based on temp, humidity, wind, rain |
+| **Car Wash Index** | Should you wash your car? Based on rain forecast + dust levels |
+| **Food Safety Index** | Food poisoning risk level based on temp + humidity |
 | **Error Notifications** | Slack alert with error details when the bot fails |
 
 ### Smart Daily Tips
@@ -235,11 +239,30 @@ The Slack messages are in Korean by default. Edit the strings in `weather_bot.py
 ├── config.yml                  # All settings (city, display, forecast)
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Env var template (local dev)
+├── Dockerfile                  # Container support
+├── Makefile                    # Dev shortcuts (run, test, docker)
 ├── tests/
-│   └── test_weather_bot.py     # 26 unit & integration tests
+│   └── test_weather_bot.py     # 34 unit & integration tests
 └── .github/workflows/
     ├── weather.yml             # Daily weather cron job
     └── test.yml                # CI test runner (push & PR)
+```
+
+### Docker
+
+```bash
+docker build -t weather-slack-bot .
+docker run --env-file .env weather-slack-bot
+```
+
+### Makefile
+
+```bash
+make install    # Install dependencies
+make run        # Run bot locally
+make test       # Run test suite
+make docker-build  # Build Docker image
+make docker-run    # Run in Docker
 ```
 
 ---

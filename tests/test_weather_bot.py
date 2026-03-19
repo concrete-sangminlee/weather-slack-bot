@@ -146,6 +146,49 @@ def test_activity_perfect():
     assert "자전거" in act or "산책" in act or "피크닉" in act
 
 
+# ── 한국형 생활지수 ──
+
+def test_discomfort_index():
+    di = wb.calc_discomfort_index(30, 80)
+    assert di > 75
+    assert "불쾌" in wb.discomfort_label(di)
+
+
+def test_discomfort_comfortable():
+    di = wb.calc_discomfort_index(20, 50)
+    assert "쾌적" in wb.discomfort_label(di)
+
+
+def test_laundry_index_good():
+    score = wb.calc_laundry_index(25, 40, 5, 0)
+    assert score >= 60
+
+
+def test_laundry_index_bad():
+    score = wb.calc_laundry_index(5, 90, 1, 80)
+    assert score <= 30
+
+
+def test_car_wash_good():
+    score = wb.calc_car_wash_index(0, 0, 10)
+    assert score >= 80
+
+
+def test_car_wash_bad():
+    score = wb.calc_car_wash_index(80, 70, 80)
+    assert score <= 30
+
+
+def test_food_safety_safe():
+    result = wb.calc_food_safety_index(15, 50)
+    assert "안전" in result
+
+
+def test_food_safety_danger():
+    result = wb.calc_food_safety_index(36, 85)
+    assert "위험" in result
+
+
 # ── 인사말 ──
 
 def test_get_greeting():
