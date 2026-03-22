@@ -1,9 +1,9 @@
 name: Weather Alert Check
 
 on:
-  schedule:
-    # 3시간마다 체크 (KST 기준 0,3,6,9,12,15,18,21시)
-    - cron: '0 */3 * * *'
+  # 긴급 알림 자동 스케줄 비활성화 — 아침 일일 브리핑만 사용
+  # schedule:
+  #   - cron: '0 */3 * * *'
   workflow_dispatch:
 
 jobs:
