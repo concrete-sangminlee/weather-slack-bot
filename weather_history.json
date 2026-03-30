@@ -322,5 +322,32 @@
     "discomfort_index": 46.1,
     "lifestyle_score": 35,
     "grade": "D"
+  },
+  {
+    "date": "2026-03-31",
+    "time": "2026-03-31T08:15",
+    "city": "서울",
+    "weather": "이슬비 (약)",
+    "category": "Drizzle",
+    "temp": 9.5,
+    "feels_like": 8.4,
+    "temp_max": 16.7,
+    "temp_min": 8.9,
+    "humidity": 90,
+    "wind_speed": 1.2,
+    "wind_gust": 7.9,
+    "precip_prob": 100,
+    "precip_sum": 8.9,
+    "cloud_cover": 39,
+    "pressure": 1010.1,
+    "visibility": 24140.0,
+    "uv_max": 6.25,
+    "sunrise": "06:19",
+    "sunset": "18:53",
+    "aqi": 156,
+    "pm25": 17.3,
+    "discomfort_index": 49.6,
+    "lifestyle_score": 25,
+    "grade": "F"
   }
 ]
