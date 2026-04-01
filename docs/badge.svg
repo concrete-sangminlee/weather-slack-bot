@@ -1,18 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="142" height="20">
+<svg xmlns="http://www.w3.org/2000/svg" width="116" height="20">
   <linearGradient id="a" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <clipPath id="r"><rect width="142" height="20" rx="3" fill="#fff"/></clipPath>
+  <clipPath id="r"><rect width="116" height="20" rx="3" fill="#fff"/></clipPath>
   <g clip-path="url(#r)">
     <rect width="26" height="20" fill="#555"/>
-    <rect x="26" width="116" height="20" fill="#2980b9"/>
-    <rect width="142" height="20" fill="url(#a)"/>
+    <rect x="26" width="90" height="20" fill="#e67e22"/>
+    <rect width="116" height="20" fill="url(#a)"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,sans-serif" font-size="11">
     <text x="13" y="15" fill="#010101" fill-opacity=".3">서울</text>
     <text x="13" y="14">서울</text>
-    <text x="84" y="15" fill="#010101" fill-opacity=".3">대체로 맑음 7.9°C (B)</text>
-    <text x="84" y="14">대체로 맑음 7.9°C (B)</text>
+    <text x="71" y="15" fill="#010101" fill-opacity=".3">흐림 3.2°C (C)</text>
+    <text x="71" y="14">흐림 3.2°C (C)</text>
   </g>
 </svg>
