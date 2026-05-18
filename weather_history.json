@@ -1645,5 +1645,32 @@
     "discomfort_index": 61.8,
     "lifestyle_score": 70,
     "grade": "B+"
+  },
+  {
+    "date": "2026-05-19",
+    "time": "2026-05-19T08:30",
+    "city": "서울",
+    "weather": "흐림",
+    "category": "Clouds",
+    "temp": 16.5,
+    "feels_like": 16.6,
+    "temp_max": 22.7,
+    "temp_min": 15.2,
+    "humidity": 71,
+    "wind_speed": 0.5,
+    "wind_gust": 4.5,
+    "precip_prob": 20,
+    "precip_sum": 0.0,
+    "cloud_cover": 87,
+    "pressure": 1015.5,
+    "visibility": 21540.0,
+    "uv_max": 4.85,
+    "sunrise": "05:19",
+    "sunset": "19:37",
+    "aqi": 89,
+    "pm25": 40.0,
+    "discomfort_index": 61.1,
+    "lifestyle_score": 75,
+    "grade": "B+"
   }
 ]
