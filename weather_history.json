@@ -2023,5 +2023,32 @@
     "discomfort_index": 65.1,
     "lifestyle_score": 90,
     "grade": "A+"
+  },
+  {
+    "date": "2026-06-02",
+    "time": "2026-06-02T08:45",
+    "city": "서울",
+    "weather": "맑음",
+    "category": "Clear",
+    "temp": 20.6,
+    "feels_like": 21.4,
+    "temp_max": 29.3,
+    "temp_min": 15.4,
+    "humidity": 65,
+    "wind_speed": 0.9,
+    "wind_gust": 4.9,
+    "precip_prob": 0,
+    "precip_sum": 0.0,
+    "cloud_cover": 8,
+    "pressure": 1009.9,
+    "visibility": 25680.0,
+    "uv_max": 7.95,
+    "sunrise": "05:12",
+    "sunset": "19:47",
+    "aqi": 141,
+    "pm25": 68.5,
+    "discomfort_index": 66.9,
+    "lifestyle_score": 85,
+    "grade": "A"
   }
 ]
