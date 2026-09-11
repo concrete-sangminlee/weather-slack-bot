@@ -1,14 +1,8 @@
 """동적 날씨 배지 SVG 생성기 — README에 현재 날씨 표시"""
 from pathlib import Path
 
-from config_loader import CITY_NAME, PAST_DAYS
-from weather_bot import (
-    WMO_DESCRIPTIONS,
-    calc_lifestyle_index,
-    fetch_weather,
-    kmh_to_ms,
-    weather_grade,
-)
+from config_loader import CITY_NAME
+from weather_bot import extract_conditions, fetch_weather
 
 BADGE_COLORS = {
     "A+": "2ecc71", "A": "27ae60", "B+": "3498db", "B": "2980b9",
@@ -36,22 +30,11 @@ SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height
 
 
 def generate_badge() -> str:
-    data = fetch_weather()
-    cur = data["current"]
-    daily = data["daily"]
-    idx = PAST_DAYS
-
-    temp = cur["temperature_2m"]
-    hum = cur["relative_humidity_2m"]
-    wind = kmh_to_ms(cur["wind_speed_10m"])
-    code = cur["weather_code"]
-    desc, _ = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
-    prob = daily["precipitation_probability_max"][idx]
-    score = calc_lifestyle_index(temp, hum, wind, None, None, prob)
-    grade, _ = weather_grade(score)
+    cond = extract_conditions(fetch_weather())
+    grade = cond.grade
 
     label = CITY_NAME
-    value = f"{desc} {temp}°C ({grade})"
+    value = f"{cond.weather} {cond.temp}°C ({grade})"
 
     label_w = len(label) * 7 + 12
     value_w = len(value) * 6.5 + 12

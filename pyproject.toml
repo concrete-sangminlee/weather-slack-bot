@@ -1,6 +1,6 @@
 [project]
 name = "weather-slack-bot"
-version = "3.2.0"
+version = "4.1.0"
 description = "Comprehensive daily weather briefing to Slack — 30+ data points, smart insights, lifestyle indices"
 readme = "README.md"
 license = {text = "MIT"}
@@ -26,7 +26,8 @@ dependencies = [
     "slack-sdk>=3.27.0",
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
-    "matplotlib>=3.8.0",
+    # zoneinfo가 시스템 tz DB 없이도 DST를 계산하도록 보장 (slim 컨테이너/Windows 대비)
+    "tzdata>=2024.1",
 ]
 
 [project.scripts]
@@ -39,7 +40,11 @@ Issues = "https://github.com/concrete-sangminlee/weather-slack-bot/issues"
 Changelog = "https://github.com/concrete-sangminlee/weather-slack-bot/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-cov>=4.0", "ruff>=0.3.0"]
+# 차트 기능(matplotlib)은 선택 사항 — 없어도 나머지 브리핑은 정상 동작한다.
+chart = ["matplotlib>=3.8.0"]
+dev = ["pytest>=8.0", "pytest-cov>=4.0", "ruff>=0.3.0", "matplotlib>=3.8.0"]
+# 전체 기능(차트 포함)을 한 번에 설치하려면: pip install weather-slack-bot[all]
+all = ["matplotlib>=3.8.0"]
 
 [build-system]
 requires = ["setuptools>=68.0"]

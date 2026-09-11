@@ -1,11 +1,10 @@
 """주간 날씨 요약 — 일요일 저녁에 한 주를 되돌아보고 다음 주를 전망"""
-import os
 import sys
 from datetime import datetime
 
-from dotenv import load_dotenv
 from slack_sdk import WebClient
 
+from config_loader import SLACK_CHANNEL, require_slack_token
 from weather_bot import (
     CITY_LAT,
     CITY_LON,
@@ -16,11 +15,6 @@ from weather_bot import (
     __version__,
     _request_with_retry,
 )
-
-load_dotenv()
-
-SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
-SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "#weather")
 
 
 def fetch_weekly_data():
@@ -150,7 +144,7 @@ def build_weekly_summary():
 def main():
     try:
         blocks = build_weekly_summary()
-        client = WebClient(token=SLACK_BOT_TOKEN)
+        client = WebClient(token=require_slack_token())
         client.chat_postMessage(
             channel=SLACK_CHANNEL,
             text=f"{CITY_NAME} 주간 날씨 요약",

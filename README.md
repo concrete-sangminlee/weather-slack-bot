@@ -130,7 +130,7 @@ compare_cities:
 | Weather Data | [Open-Meteo](https://open-meteo.com/) (free, no API key) |
 | Air Quality | [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) |
 | Slack Integration | [slack-sdk](https://slack.dev/python-slack-sdk/) and Incoming Webhooks |
-| Charts | [matplotlib](https://matplotlib.org/) |
+| Charts | [matplotlib](https://matplotlib.org/) (optional — install with `pip install weather-slack-bot[chart]`) |
 | Scheduling | GitHub Actions cron |
 | Runtime | Python 3.10+ |
 
