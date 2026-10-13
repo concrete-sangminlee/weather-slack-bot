@@ -2,7 +2,10 @@ import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
 from slack_sdk import WebClient
@@ -28,20 +31,40 @@ __version__ = "4.1.0"
 MAX_RETRIES = 3
 RETRY_DELAY = 5
 
-# 타임존 매핑 (주요 IANA → UTC offset)
-_TZ_OFFSETS = {
-    "Asia/Seoul": 9, "Asia/Tokyo": 9, "Asia/Shanghai": 8,
-    "US/Eastern": -5, "US/Central": -6, "US/Pacific": -8,
-    "Europe/London": 0, "Europe/Paris": 1, "Europe/Berlin": 1,
-    "UTC": 0,
-}
+# tz 데이터베이스가 아예 없을 때(slim 컨테이너 등) 쓰는 최후 폴백 (+9, DST 미반영)
+_FIXED_FALLBACK_TZ = timezone(timedelta(hours=9))
+
+
+def _resolve_tz(name: str):
+    """config의 IANA 타임존 이름을 tzinfo로 변환 (DST 자동 반영).
+
+    1) 요청한 이름으로 ZoneInfo 시도
+    2) 이름이 잘못됐으면 Asia/Seoul ZoneInfo로 폴백
+    3) tz 데이터베이스 자체가 없으면(예: python:*-slim + tzdata 미설치)
+       고정 오프셋(+9)으로 폴백해 절대 예외를 던지지 않는다."""
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError):
+        print(
+            f"⚠️  타임존 '{name}'을 확인할 수 없습니다 — Asia/Seoul로 폴백합니다.",
+            file=sys.stderr,
+        )
+    try:
+        return ZoneInfo("Asia/Seoul")
+    except ZoneInfoNotFoundError:
+        print(
+            "⚠️  tz 데이터베이스를 찾을 수 없습니다 — 고정 오프셋(+9)으로 폴백합니다. "
+            "(DST 정확도를 위해 'tzdata' 설치 권장)",
+            file=sys.stderr,
+        )
+        return _FIXED_FALLBACK_TZ
 
 
 def now_local() -> datetime:
-    """config의 타임존 기준 현재 시각 반환 (naive datetime)"""
-    offset_hours = _TZ_OFFSETS.get(TIMEZONE, 9)
-    tz = timezone(timedelta(hours=offset_hours))
-    return datetime.now(tz).replace(tzinfo=None)
+    """config의 타임존 기준 현재 시각 반환 (naive datetime).
+
+    zoneinfo(표준 라이브러리)를 사용하므로 서머타임(DST)이 자동 반영된다."""
+    return datetime.now(_resolve_tz(TIMEZONE)).replace(tzinfo=None)
 
 # Open-Meteo WMO Weather Code 매핑
 WMO_DESCRIPTIONS = {
@@ -211,6 +234,18 @@ def fetch_air_quality():
     return _request_with_retry(url, params)
 
 
+def try_fetch_air_quality():
+    """대기질 데이터를 가져오되 실패해도 None을 반환한다.
+
+    대기질은 부가 정보이므로 실패가 전체 브리핑을 막지 않는다.
+    다만 조용히 삼키지 않고 stderr에 경고를 남긴다."""
+    try:
+        return fetch_air_quality()
+    except (requests.RequestException, KeyError, ValueError) as e:
+        print(f"⚠️ 대기질 데이터를 가져오지 못했습니다: {e}", file=sys.stderr)
+        return None
+
+
 def aqi_level(aqi):
     if aqi <= 50:
         return "좋음 🟢"
@@ -335,6 +370,95 @@ def lifestyle_label(score):
 def lifestyle_bar(score):
     filled = round(score / 10)
     return "🟩" * filled + "⬜" * (10 - filled)
+
+
+@dataclass
+class CurrentConditions:
+    """fetch_weather() 응답에서 추출한 현재 날씨 상태와 파생 지수 모음.
+
+    cli/history/badge 등 여러 곳에서 중복되던 추출 로직을 한곳으로 모은 것."""
+    time: str
+    weather: str          # 한글 설명
+    category: str         # WMO 카테고리 (Clear/Rain/...)
+    emoji: str
+    temp: float
+    feels_like: float
+    temp_max: float
+    temp_min: float
+    humidity: float
+    wind_speed: float     # m/s
+    wind_gust: float      # m/s
+    precip_prob: float
+    precip_sum: float
+    cloud_cover: float
+    pressure: float
+    visibility: float
+    uv_max: float
+    sunrise: str          # HH:MM
+    sunset: str           # HH:MM
+    aqi: Optional[float]
+    pm25: Optional[float]
+    lifestyle_score: int
+    grade: str
+    grade_color: str      # weather_grade 색상 (hex)
+    discomfort_index: float
+    outfit: str
+
+
+def extract_conditions(data, air_data=None) -> CurrentConditions:
+    """fetch_weather() (+선택적 fetch_air_quality()) 결과에서 현재 상태를 추출한다.
+
+    여러 CLI/유틸 명령이 각자 복붙하던 로직을 대체하는 단일 진입점.
+    air_data가 None이면 aqi/pm25는 None으로 채운다."""
+    cur = data["current"]
+    daily = data["daily"]
+    idx = PAST_DAYS
+
+    code = cur["weather_code"]
+    desc, cat = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
+
+    aqi = pm25 = None
+    if air_data:
+        aqi = air_data["current"].get("us_aqi")
+        pm25 = air_data["current"].get("pm2_5")
+
+    temp = cur["temperature_2m"]
+    feels = cur["apparent_temperature"]
+    hum = cur["relative_humidity_2m"]
+    wind = kmh_to_ms(cur["wind_speed_10m"])
+    prob = daily["precipitation_probability_max"][idx]
+
+    score = calc_lifestyle_index(temp, hum, wind, None, aqi, prob)
+    grade, grade_color = weather_grade(score)
+
+    return CurrentConditions(
+        time=cur["time"],
+        weather=desc,
+        category=cat,
+        emoji=WEATHER_EMOJIS.get(cat, "🌡️"),
+        temp=temp,
+        feels_like=feels,
+        temp_max=daily["temperature_2m_max"][idx],
+        temp_min=daily["temperature_2m_min"][idx],
+        humidity=hum,
+        wind_speed=wind,
+        wind_gust=kmh_to_ms(cur["wind_gusts_10m"]),
+        precip_prob=prob,
+        precip_sum=daily["precipitation_sum"][idx],
+        cloud_cover=cur["cloud_cover"],
+        pressure=cur["pressure_msl"],
+        visibility=cur.get("visibility", 0),
+        uv_max=daily["uv_index_max"][idx],
+        sunrise=format_time(daily["sunrise"][idx]),
+        sunset=format_time(daily["sunset"][idx]),
+        aqi=aqi,
+        pm25=pm25,
+        lifestyle_score=score,
+        grade=grade,
+        grade_color=grade_color,
+        discomfort_index=calc_discomfort_index(temp, hum),
+        outfit=get_outfit_recommendation(temp, feels, cat, prob),
+    )
 
 
 def calc_wind_chill(temp: float, wind_ms: float) -> float:
@@ -620,13 +744,12 @@ def calc_golden_hour(sunrise_str, sunset_str):
     """사진 촬영 골든아워 계산 (일출/일몰 전후 30분)"""
     sunrise = datetime.fromisoformat(sunrise_str)
     sunset = datetime.fromisoformat(sunset_str)
+    half_hour = timedelta(minutes=30)
 
     morning_start = sunrise.strftime("%H:%M")
-    morning_end = (sunrise.replace(minute=sunrise.minute + 30) if sunrise.minute + 30 < 60
-                   else sunrise.replace(hour=sunrise.hour + 1, minute=(sunrise.minute + 30) % 60)).strftime("%H:%M")
+    morning_end = (sunrise + half_hour).strftime("%H:%M")
 
-    evening_start = (sunset.replace(minute=sunset.minute - 30) if sunset.minute >= 30
-                     else sunset.replace(hour=sunset.hour - 1, minute=sunset.minute + 30)).strftime("%H:%M")
+    evening_start = (sunset - half_hour).strftime("%H:%M")
     evening_end = sunset.strftime("%H:%M")
 
     return f"📷 {morning_start}~{morning_end} / {evening_start}~{evening_end}"
@@ -858,7 +981,7 @@ def get_seasonal_note():
         return "🌿 신록의 계절, 초록빛이 짙어지고 있어요."
     if month == 5 and 1 <= day <= 20:
         return "🌹 장미가 피기 시작하는 계절이에요."
-    if month in (6, 7) and 15 <= day <= 31 and month == 6 or month == 7 and day <= 20:
+    if (month == 6 and 15 <= day <= 30) or (month == 7 and day <= 20):
         return "🌧️ 장마철이에요. 우산과 제습에 신경 쓰세요."
     if month == 7 and 20 < day <= 31:
         return "🏖️ 본격 여름 휴가철! 더위 조심하세요."
@@ -1762,7 +1885,8 @@ def main():
             data = weather_future.result()
             try:
                 air_data = air_future.result()
-            except Exception:
+            except (requests.RequestException, KeyError, ValueError) as e:
+                print(f"⚠️ 대기질 데이터를 가져오지 못했습니다: {e}", file=sys.stderr)
                 air_data = None
 
         if not validate_weather_data(data):
@@ -1776,8 +1900,8 @@ def main():
         try:
             from chart import generate_chart
             chart_path = generate_chart()
-        except Exception:
-            pass
+        except Exception as e:  # noqa: BLE001 - 차트는 선택 기능, 실패해도 전송 계속
+            print(f"⚠️ 차트 생성 실패 (건너뜀): {e}", file=sys.stderr)
 
         send_to_slack(blocks, fallback_text, chart_path, color, weather_cat)
 

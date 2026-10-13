@@ -1,10 +1,10 @@
 """긴급 날씨 알림 — 3시간마다 극단적 기상 조건 체크 (config.yml 임계값 사용)"""
-import os
 import sys
 
-from dotenv import load_dotenv
+import requests
 from slack_sdk import WebClient
 
+from config_loader import require_slack_token
 from weather_bot import (
     CITY_NAME,
     CONFIG,
@@ -15,10 +15,6 @@ from weather_bot import (
     fetch_weather,
     kmh_to_ms,
 )
-
-load_dotenv()
-
-SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 
 # config.yml 임계값 (기본값 포함)
 THRESHOLDS = CONFIG.get("alerts", {})
@@ -71,8 +67,8 @@ def check_alerts():
             alerts.append(("🚨", "대기질 매우 나쁨", f"AQI *{aqi}*, PM2.5 *{pm25}* µg/m³. 외출 자제, KF94 마스크 필수!"))
         elif aqi and aqi > AQI_WARN:
             alerts.append(("😷", "대기질 나쁨", f"AQI *{aqi}*, PM2.5 *{pm25}* µg/m³. 민감군 외출 자제."))
-    except Exception:
-        pass
+    except (requests.RequestException, KeyError, ValueError) as e:
+        print(f"⚠️ 대기질 알림 체크 건너뜀: {e}", file=sys.stderr)
 
     return alerts
 
@@ -108,7 +104,7 @@ def send_alerts(alerts):
         ],
     })
 
-    client = WebClient(token=SLACK_BOT_TOKEN)
+    client = WebClient(token=require_slack_token())
     for channel in _get_channels():
         client.chat_postMessage(
             channel=channel,

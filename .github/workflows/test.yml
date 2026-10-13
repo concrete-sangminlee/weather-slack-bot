@@ -31,10 +31,9 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest pytest-cov
+        # 테스트가 chart 모듈을 import 하므로 matplotlib(chart extra)도 설치
+        run: pip install -r requirements.txt "matplotlib>=3.8.0" pytest pytest-cov
 
       - name: Run tests with coverage
-        run: pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml
-
-      - name: Check coverage threshold
-        run: pytest tests/ --cov=. --cov-fail-under=50 -q
+        # 단일 실행으로 리포트 출력과 임계값 검사를 동시에 수행 (중복 실행 제거)
+        run: pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml --cov-fail-under=50

@@ -1,5 +1,25 @@
 # Changelog
 
+## v4.1.0 (2026-09-11)
+
+### Fixed
+- `pyproject.toml` version now matches the code (`__version__`) — was out of sync
+- `get_seasonal_note`: fixed operator-precedence bug so the 장마철(rainy season) message fires on the correct dates
+- Timezone handling now uses the standard-library `zoneinfo` instead of a hand-maintained offset map — daylight saving time is respected and unknown zones warn + fall back to Asia/Seoul, with a crash-proof fixed-offset fallback when no tz database is present (`tzdata` added as a dependency for slim containers)
+- `calc_golden_hour` uses `timedelta`, avoiding a possible `ValueError` at minute/hour boundaries
+- CLI `daily` now passes the weather category to `send_to_slack`, so the per-weather bot icon/name is applied (matching the module entry point)
+
+### Changed
+- `SLACK_BOT_TOKEN` is now read once in `config_loader` and validated at send time via `require_slack_token()` — no more import-time `KeyError` in `alert.py` / `weekly_summary.py`
+- Extracted a shared `extract_conditions()` / `CurrentConditions` builder in `weather_bot`, removing duplicated data-extraction logic from `cli.py`, `history.py`, and `badge.py`
+- Replaced broad `except Exception: pass` blocks with targeted exception handling and stderr warnings
+- `matplotlib` is now an optional extra (`pip install weather-slack-bot[chart]`); core install is lighter. Workflows/Dockerfile that render charts install it explicitly
+- `requirements.txt` slimmed to core deps; `pyproject.toml` is the canonical dependency source
+- CI test workflow runs pytest once (report + coverage threshold combined)
+
+### Added
+- Mocked unit tests for the Slack delivery layer, request retry/backoff, timezone/golden-hour/seasonal logic, and token validation
+
 ## v3.1.0 (2026-03-19)
 
 ### Added

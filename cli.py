@@ -11,22 +11,33 @@ Usage:
     weather-bot version            # Version info
 """
 import argparse
+import sys
+
+
+def _try_generate_chart():
+    """차트를 생성하되 실패하면 None을 반환한다 (차트는 부가 기능).
+
+    matplotlib/네트워크 등 다양한 오류가 날 수 있으므로 폭넓게 잡되,
+    조용히 삼키지 않고 stderr에 경고를 남긴다."""
+    try:
+        from chart import generate_chart
+        return generate_chart()
+    except Exception as e:  # noqa: BLE001 - 차트는 선택 기능, 실패해도 계속 진행
+        print(f"⚠️ 차트 생성 실패 (건너뜀): {e}", file=sys.stderr)
+        return None
 
 
 def cmd_daily(dry_run=False):
     from weather_bot import (
         build_blocks,
         build_fallback_text,
-        fetch_air_quality,
         fetch_weather,
         send_to_slack,
+        try_fetch_air_quality,
     )
 
     data = fetch_weather()
-    try:
-        air_data = fetch_air_quality()
-    except Exception:
-        air_data = None
+    air_data = try_fetch_air_quality()
 
     blocks, color, weather_cat = build_blocks(data, air_data)
     fallback = build_fallback_text(data)
@@ -51,13 +62,8 @@ def cmd_daily(dry_run=False):
             for e in elems:
                 print(f"    ctx: {e.get('text', '')[:80]}")
     else:
-        chart_path = None
-        try:
-            from chart import generate_chart
-            chart_path = generate_chart()
-        except Exception:
-            pass
-        send_to_slack(blocks, fallback, chart_path, color)
+        chart_path = _try_generate_chart()
+        send_to_slack(blocks, fallback, chart_path, color, weather_cat)
         if chart_path:
             import os
             try:
@@ -71,66 +77,36 @@ def cmd_digest(dry_run=False):
     """초단축 다이제스트 — 핵심 정보만 1블록으로"""
     from slack_sdk import WebClient
 
+    from config_loader import require_slack_token
     from weather_bot import (
         CITY_NAME,
-        SLACK_BOT_TOKEN,
-        WEATHER_EMOJIS,
-        WMO_DESCRIPTIONS,
         _get_channels,
-        calc_lifestyle_index,
-        fetch_air_quality,
+        extract_conditions,
         fetch_weather,
-        get_outfit_recommendation,
-        kmh_to_ms,
-        weather_grade,
+        try_fetch_air_quality,
     )
 
-    data = fetch_weather()
-    cur = data["current"]
-    daily = data["daily"]
-    from weather_bot import PAST_DAYS
-    idx = PAST_DAYS
-
-    temp = cur["temperature_2m"]
-    feels = cur["apparent_temperature"]
-    hum = cur["relative_humidity_2m"]
-    wind = kmh_to_ms(cur["wind_speed_10m"])
-    code = cur["weather_code"]
-    desc, cat = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
-    emoji = WEATHER_EMOJIS.get(cat, "🌡️")
-    t_max = daily["temperature_2m_max"][idx]
-    t_min = daily["temperature_2m_min"][idx]
-    prob = daily["precipitation_probability_max"][idx]
-
-    aqi_text = ""
-    try:
-        air = fetch_air_quality()
-        aqi = air["current"].get("us_aqi")
-        aqi_text = f" · AQI {aqi}"
-    except Exception:
-        aqi = None
-
-    score = calc_lifestyle_index(temp, hum, wind, None, aqi, prob)
-    grade, color = weather_grade(score)
-    outfit = get_outfit_recommendation(temp, feels, cat, prob)
+    cond = extract_conditions(fetch_weather(), try_fetch_air_quality())
+    aqi_text = f" · AQI {cond.aqi}" if cond.aqi is not None else ""
 
     text = (
-        f"{emoji} *{CITY_NAME}* {desc} *{temp}°C* (체감 {feels}°C)\n"
-        f"⬆️{t_max}° ⬇️{t_min}° · 💧{hum}% · 🌬️{wind}m/s · ☔{prob}%{aqi_text}\n"
-        f"등급 *{grade}* · {outfit}"
+        f"{cond.emoji} *{CITY_NAME}* {cond.weather} *{cond.temp}°C* (체감 {cond.feels_like}°C)\n"
+        f"⬆️{cond.temp_max}° ⬇️{cond.temp_min}° · 💧{cond.humidity}% · "
+        f"🌬️{cond.wind_speed}m/s · ☔{cond.precip_prob}%{aqi_text}\n"
+        f"등급 *{cond.grade}* · {cond.outfit}"
     )
 
     if dry_run:
         print("=== DIGEST DRY RUN ===")
         print(text)
     else:
-        client = WebClient(token=SLACK_BOT_TOKEN)
+        client = WebClient(token=require_slack_token())
         for ch in _get_channels():
             client.chat_postMessage(
                 channel=ch,
-                text=f"{CITY_NAME}: {desc} {temp}°C",
+                text=f"{CITY_NAME}: {cond.weather} {cond.temp}°C",
                 attachments=[{
-                    "color": color,
+                    "color": cond.grade_color,
                     "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": text}}],
                 }],
             )
@@ -152,48 +128,13 @@ def cmd_export():
 
     from weather_bot import (
         CITY_NAME,
-        PAST_DAYS,
-        WMO_DESCRIPTIONS,
-        calc_discomfort_index,
-        calc_lifestyle_index,
-        fetch_air_quality,
+        extract_conditions,
         fetch_weather,
-        format_time,
-        get_outfit_recommendation,
-        kmh_to_ms,
-        weather_grade,
+        now_local,
+        try_fetch_air_quality,
     )
 
-    data = fetch_weather()
-    cur = data["current"]
-    daily = data["daily"]
-    idx = PAST_DAYS
-
-    temp = cur["temperature_2m"]
-    feels = cur["apparent_temperature"]
-    hum = cur["relative_humidity_2m"]
-    wind = kmh_to_ms(cur["wind_speed_10m"])
-    code = cur["weather_code"]
-    desc, cat = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
-    t_max = daily["temperature_2m_max"][idx]
-    t_min = daily["temperature_2m_min"][idx]
-    prob = daily["precipitation_probability_max"][idx]
-    sunrise = format_time(daily["sunrise"][idx])
-    sunset = format_time(daily["sunset"][idx])
-
-    aqi = pm25 = None
-    try:
-        air = fetch_air_quality()
-        aqi = air["current"].get("us_aqi")
-        pm25 = air["current"].get("pm2_5")
-    except Exception:
-        pass
-
-    score = calc_lifestyle_index(temp, hum, wind, None, aqi, prob)
-    grade, _ = weather_grade(score)
-    di = calc_discomfort_index(temp, hum)
-    outfit = get_outfit_recommendation(temp, feels, cat, prob)
-    from weather_bot import now_local
+    cond = extract_conditions(fetch_weather(), try_fetch_air_quality())
     now = now_local().strftime("%Y-%m-%d %H:%M")
 
     md = f"""# {CITY_NAME} Weather Report
@@ -202,24 +143,24 @@ def cmd_export():
 ## Current Conditions
 | Metric | Value |
 |--------|-------|
-| Weather | {desc} |
-| Temperature | {temp}°C (feels {feels}°C) |
-| High / Low | {t_max}°C / {t_min}°C |
-| Humidity | {hum}% |
-| Wind | {wind} m/s |
-| Precipitation | {prob}% |
-| Sunrise / Sunset | {sunrise} / {sunset} |
-| AQI | {aqi or 'N/A'} |
-| PM2.5 | {pm25 or 'N/A'} µg/m³ |
+| Weather | {cond.weather} |
+| Temperature | {cond.temp}°C (feels {cond.feels_like}°C) |
+| High / Low | {cond.temp_max}°C / {cond.temp_min}°C |
+| Humidity | {cond.humidity}% |
+| Wind | {cond.wind_speed} m/s |
+| Precipitation | {cond.precip_prob}% |
+| Sunrise / Sunset | {cond.sunrise} / {cond.sunset} |
+| AQI | {cond.aqi or 'N/A'} |
+| PM2.5 | {cond.pm25 or 'N/A'} µg/m³ |
 
 ## Indices
 | Index | Value |
 |-------|-------|
-| Lifestyle Score | {score}/100 (Grade {grade}) |
-| Discomfort Index | {di} |
+| Lifestyle Score | {cond.lifestyle_score}/100 (Grade {cond.grade}) |
+| Discomfort Index | {cond.discomfort_index} |
 
 ## Recommendation
-- **Outfit**: {outfit}
+- **Outfit**: {cond.outfit}
 
 ---
 *Generated by weather-slack-bot*
@@ -237,50 +178,21 @@ def cmd_json():
     """날씨 데이터를 JSON으로 출력"""
     import json as json_mod
 
-    from weather_bot import (
-        PAST_DAYS,
-        WMO_DESCRIPTIONS,
-        calc_discomfort_index,
-        calc_lifestyle_index,
-        fetch_air_quality,
-        fetch_weather,
-        kmh_to_ms,
-        weather_grade,
-    )
+    from weather_bot import extract_conditions, fetch_weather, try_fetch_air_quality
 
-    data = fetch_weather()
-    cur = data["current"]
-    daily = data["daily"]
-    idx = PAST_DAYS
-
-    code = cur["weather_code"]
-    desc, _ = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
-
-    aqi = pm25 = None
-    try:
-        air = fetch_air_quality()
-        aqi = air["current"].get("us_aqi")
-        pm25 = air["current"].get("pm2_5")
-    except Exception:
-        pass
-
-    temp = cur["temperature_2m"]
-    hum = cur["relative_humidity_2m"]
-    wind = kmh_to_ms(cur["wind_speed_10m"])
-    prob = daily["precipitation_probability_max"][idx]
-    score = calc_lifestyle_index(temp, hum, wind, None, aqi, prob)
-    grade, color = weather_grade(score)
+    cond = extract_conditions(fetch_weather(), try_fetch_air_quality())
 
     output = {
-        "timestamp": cur["time"],
-        "weather": desc,
-        "temperature": {"current": temp, "feels_like": cur["apparent_temperature"],
-                        "max": daily["temperature_2m_max"][idx], "min": daily["temperature_2m_min"][idx]},
-        "humidity": hum,
-        "wind": {"speed_ms": wind, "gust_ms": kmh_to_ms(cur["wind_gusts_10m"])},
-        "precipitation": {"probability": prob, "sum_mm": daily["precipitation_sum"][idx]},
-        "air_quality": {"aqi": aqi, "pm25": pm25},
-        "indices": {"lifestyle": score, "grade": grade, "discomfort": calc_discomfort_index(temp, hum)},
+        "timestamp": cond.time,
+        "weather": cond.weather,
+        "temperature": {"current": cond.temp, "feels_like": cond.feels_like,
+                        "max": cond.temp_max, "min": cond.temp_min},
+        "humidity": cond.humidity,
+        "wind": {"speed_ms": cond.wind_speed, "gust_ms": cond.wind_gust},
+        "precipitation": {"probability": cond.precip_prob, "sum_mm": cond.precip_sum},
+        "air_quality": {"aqi": cond.aqi, "pm25": cond.pm25},
+        "indices": {"lifestyle": cond.lifestyle_score, "grade": cond.grade,
+                    "discomfort": cond.discomfort_index},
     }
     print(json_mod.dumps(output, ensure_ascii=False, indent=2))
 
@@ -401,8 +313,8 @@ def cmd_stats():
                 f"   Avg temp: {s['avg_temp']}°C | High: {s['highest']}°C | Low: {s['lowest']}°C\n"
                 f"   Rainy days: {s['rainy_days']} | Avg score: {s['avg_score']}/100"
             )
-    except Exception:
-        pass
+    except (OSError, ValueError, KeyError) as e:
+        print(f"⚠️ 히스토리 통계를 불러오지 못했습니다: {e}", file=sys.stderr)
 
     print(f"""weather-slack-bot v{__version__}
 

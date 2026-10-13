@@ -17,7 +17,8 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # 일일 브리핑은 차트를 포함하므로 chart extra(matplotlib)도 설치
+        run: pip install -r requirements.txt "matplotlib>=3.8.0"
 
       - name: Send weather
         env:

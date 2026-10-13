@@ -40,7 +40,7 @@ All tests must pass before submitting a PR.
 
 ## Code Style
 
-- Python 3.12+
+- Python 3.10+
 - Functions should have docstrings for complex logic
 - Korean strings for user-facing Slack messages
 - English for code comments and variable names

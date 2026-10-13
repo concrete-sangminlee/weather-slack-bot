@@ -41,6 +41,19 @@ TREND_DAYS = CONFIG["forecast"].get("trend_days", 7)
 DISPLAY = CONFIG["display"]
 
 
+def require_slack_token():
+    """Bot Token 모드에 필요한 SLACK_BOT_TOKEN을 반환한다.
+
+    import 시점이 아니라 실제 전송 직전에 호출해 누락 시 명확한 오류를 낸다.
+    (직접 os.environ["SLACK_BOT_TOKEN"]로 읽으면 import 시 KeyError가 발생)"""
+    if not SLACK_BOT_TOKEN:
+        raise RuntimeError(
+            "SLACK_BOT_TOKEN 환경변수가 설정되지 않았습니다. "
+            ".env 또는 CI 시크릿에 xoxb- 토큰을 설정하세요."
+        )
+    return SLACK_BOT_TOKEN
+
+
 def validate_config():
     """설정 파일 검증"""
     errors = []

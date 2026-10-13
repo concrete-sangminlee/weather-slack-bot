@@ -2,18 +2,13 @@
 import json
 from pathlib import Path
 
+from config_loader import PAST_DAYS
 from weather_bot import (
     CITY_NAME,
-    PAST_DAYS,
-    WMO_DESCRIPTIONS,
-    calc_discomfort_index,
-    calc_lifestyle_index,
-    fetch_air_quality,
+    extract_conditions,
     fetch_weather,
-    format_time,
-    kmh_to_ms,
     now_local,
-    weather_grade,
+    try_fetch_air_quality,
 )
 
 HISTORY_PATH = Path(__file__).parent / "weather_history.json"
@@ -37,55 +32,35 @@ def save_history(records: list):
 
 def log_today():
     """오늘의 날씨 데이터를 히스토리에 추가"""
-    data = fetch_weather()
-    cur = data["current"]
-    daily = data["daily"]
-    idx = PAST_DAYS
-
-    code = cur["weather_code"]
-    desc, cat = WMO_DESCRIPTIONS.get(code, ("?", "Clear"))
-
-    aqi = pm25 = None
-    try:
-        air = fetch_air_quality()
-        aqi = air["current"].get("us_aqi")
-        pm25 = air["current"].get("pm2_5")
-    except Exception:
-        pass
-
-    temp = cur["temperature_2m"]
-    hum = cur["relative_humidity_2m"]
-    wind = kmh_to_ms(cur["wind_speed_10m"])
-    prob = daily["precipitation_probability_max"][idx]
-    score = calc_lifestyle_index(temp, hum, wind, None, aqi, prob)
-    grade, _ = weather_grade(score)
+    air_data = try_fetch_air_quality()
+    cond = extract_conditions(fetch_weather(), air_data)
 
     record = {
         "date": now_local().strftime("%Y-%m-%d"),
-        "time": cur["time"],
+        "time": cond.time,
         "city": CITY_NAME,
-        "weather": desc,
-        "category": cat,
-        "temp": temp,
-        "feels_like": cur["apparent_temperature"],
-        "temp_max": daily["temperature_2m_max"][idx],
-        "temp_min": daily["temperature_2m_min"][idx],
-        "humidity": hum,
-        "wind_speed": wind,
-        "wind_gust": kmh_to_ms(cur["wind_gusts_10m"]),
-        "precip_prob": prob,
-        "precip_sum": daily["precipitation_sum"][idx],
-        "cloud_cover": cur["cloud_cover"],
-        "pressure": cur["pressure_msl"],
-        "visibility": cur.get("visibility", 0),
-        "uv_max": daily["uv_index_max"][idx],
-        "sunrise": format_time(daily["sunrise"][idx]),
-        "sunset": format_time(daily["sunset"][idx]),
-        "aqi": aqi,
-        "pm25": pm25,
-        "discomfort_index": calc_discomfort_index(temp, hum),
-        "lifestyle_score": score,
-        "grade": grade,
+        "weather": cond.weather,
+        "category": cond.category,
+        "temp": cond.temp,
+        "feels_like": cond.feels_like,
+        "temp_max": cond.temp_max,
+        "temp_min": cond.temp_min,
+        "humidity": cond.humidity,
+        "wind_speed": cond.wind_speed,
+        "wind_gust": cond.wind_gust,
+        "precip_prob": cond.precip_prob,
+        "precip_sum": cond.precip_sum,
+        "cloud_cover": cond.cloud_cover,
+        "pressure": cond.pressure,
+        "visibility": cond.visibility,
+        "uv_max": cond.uv_max,
+        "sunrise": cond.sunrise,
+        "sunset": cond.sunset,
+        "aqi": cond.aqi,
+        "pm25": cond.pm25,
+        "discomfort_index": cond.discomfort_index,
+        "lifestyle_score": cond.lifestyle_score,
+        "grade": cond.grade,
     }
 
     history = load_history()
@@ -138,6 +113,8 @@ def check_forecast_accuracy():
 
     # past_days=1이므로 index 0 = 어제 실제, index 1 = 오늘 실제
     idx = PAST_DAYS
+    if idx >= len(daily["temperature_2m_max"]):
+        return None
     actual_max = daily["temperature_2m_max"][idx]
     actual_min = daily["temperature_2m_min"][idx]
 

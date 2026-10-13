@@ -1,5 +1,11 @@
+# 런타임 핵심 의존성.
+# 정식(단일) 소스는 pyproject.toml의 [project].dependencies 이며,
+# 이 파일은 pyproject 없이 `pip install -r`로 실행하는 워크플로용 편의 파일이다.
+# 차트(matplotlib)는 선택 기능이라 여기 없다 — 필요하면 아래를 설치:
+#   pip install matplotlib>=3.8.0     (또는  pip install .[chart])
 requests>=2.31.0
 slack-sdk>=3.27.0
 python-dotenv>=1.0.0
 pyyaml>=6.0
-matplotlib>=3.8.0
+# zoneinfo가 시스템 tz DB 없이도 DST를 계산하도록 보장 (slim 컨테이너/Windows 대비)
+tzdata>=2024.1
